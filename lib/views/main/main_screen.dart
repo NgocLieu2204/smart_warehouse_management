@@ -1,6 +1,8 @@
-// lib/views/main/main_screen.dart
+// lib/views/main/main_screen.dart (ĐÃ CẬP NHẬT)
 
 import 'package:flutter/material.dart';
+// Sửa đường dẫn import cho đúng với cấu trúc dự án của bạn
+import '../../widgets/main/custom_bottom_nav_bar.dart'; 
 import '../dashboard/dashboard_screen.dart';
 import '../inventory/inventory_screen.dart';
 import '../orders/orders_screen.dart';
@@ -32,6 +34,8 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Thuộc tính này cho phép body hiển thị phía sau thanh điều hướng
+      extendBody: true, 
       body: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
@@ -44,38 +48,14 @@ class _MainScreenState extends State<MainScreen> {
         },
         backgroundColor: Theme.of(context).colorScheme.secondary,
         child: const Icon(Icons.add, color: Colors.black),
-        elevation: 8,
-        shape: const CircleBorder(),
+        elevation: 4.0,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2),
-            label: 'Inventory',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey.shade500,
-        showUnselectedLabels: true,
+      // Đặt vị trí FAB ở trung tâm và "dock" vào thanh điều hướng
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked, 
+      // Sử dụng widget thanh điều hướng mới
+      bottomNavigationBar: CustomBottomNavBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }

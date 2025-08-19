@@ -8,6 +8,7 @@ import '../../widgets/chart_card.dart';
 import '../../widgets/flip_item_card.dart';
 import '../../widgets/qr_scanner_dialog.dart';
 
+
 class DashboardView extends StatelessWidget {
   const DashboardView({Key? key}) : super(key: key);
 

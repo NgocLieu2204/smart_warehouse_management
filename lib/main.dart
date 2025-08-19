@@ -1,4 +1,4 @@
-// lib/main.dart (ĐÃ SỬA LỖI)
+// lib/main.dart (ĐÃ KIỂM TRA VÀ SỬA LỖI ĐIỀU HƯỚNG)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,8 +14,11 @@ import 'blocs/auth/auth_bloc.dart';
 import 'blocs/auth/auth_state.dart';
 import 'blocs/product/product_event.dart';
 import 'views/auth/login_screen.dart';
-// Thay đổi import từ dashboard cũ sang màn hình chính mới
+
+// THÊM CÁC IMPORT CẦN THIẾT CHO GIAO DIỆN MỚI
 import 'views/main/main_screen.dart'; 
+import 'views/main/splash_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +33,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Giữ nguyên phần khởi tạo backend của bạn
     final authRepository = AuthRepository();
     final productRepo = ProductRepository(
       Dio(BaseOptions(
@@ -57,6 +59,7 @@ class AppView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- Giao diện mới ---
     const colorPrimary = Color(0xFF00BFFF);
     const colorAccent = Color(0xFFFFD700);
     const colorDarkBg = Color(0xFF121212);
@@ -86,7 +89,6 @@ class AppView extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      // SỬA LỖI: Sử dụng CardThemeData thay vì CardTheme
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -123,7 +125,6 @@ class AppView extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      // SỬA LỖI: Sử dụng CardThemeData thay vì CardTheme
       cardTheme: CardThemeData(
         elevation: 0,
         color: Colors.white.withOpacity(0.05),
@@ -140,10 +141,12 @@ class AppView extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.system,
-      home: const AuthWrapper(),
+      // Bắt đầu bằng AuthWrapper để kiểm tra đăng nhập
+      home: const AuthWrapper(), 
     );
   }
 }
+
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -153,13 +156,16 @@ class AuthWrapper extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          // Khi đăng nhập thành công, chuyển đến MainScreen mới
-          return const MainScreen();
+          // **ĐIỂM THAY ĐỔI QUAN TRỌNG NHẤT**
+          // Đảm bảo rằng sau khi đăng nhập, nó sẽ điều hướng đến MainScreen
+          // chứ không phải DashboardScreen cũ.
+          return const MainScreen(); 
         } else if (state is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         } else {
+          // Nếu chưa đăng nhập, vẫn hiển thị trang LoginPage
           return const LoginPage();
         }
       },

@@ -19,10 +19,10 @@ class ExpandingListItem extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ExpandingListItemState createState() => _ExpandingListItemState();
+  ExpandingListItemState createState() => ExpandingListItemState();
 }
 
-class _ExpandingListItemState extends State<ExpandingListItem> {
+class ExpandingListItemState extends State<ExpandingListItem> {
   bool _isExpanded = false;
 
   void expand() => setState(() => _isExpanded = true);
