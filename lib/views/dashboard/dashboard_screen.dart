@@ -1,204 +1,186 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_event.dart';
-import 'package:smart_warehouse_manager/views/products/product_list_screen.dart';
-import 'package:smart_warehouse_manager/views/inventory/stock_transaction_screen.dart';
-import 'package:smart_warehouse_manager/views/inventory/history_screen.dart';
-import 'package:smart_warehouse_manager/views/reports/report_screen.dart';
-import '../auth/login_screen.dart';
+// lib/views/dashboard/dashboard_screen.dart
 
-// Nội dung tab Dashboard tách riêng ra
-class DashboardContent extends StatelessWidget {
-  const DashboardContent({super.key});
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import '../../widgets/metric_card.dart';
+import '../../widgets/chart_card.dart';
+import '../../widgets/flip_item_card.dart';
+import '../../widgets/qr_scanner_dialog.dart';
+
+class DashboardView extends StatelessWidget {
+  const DashboardView({Key? key}) : super(key: key);
+
+  void _showQRScannerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return const QrScannerDialog();
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tổng quan',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  title: 'Sản phẩm',
-                  value: '1,250', // TODO: Lấy dữ liệu thật
-                  icon: Icons.inventory_2,
-                  color: Colors.blue,
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final formatter = NumberFormat("#,###", "en_US");
+
+    return Scaffold(
+      appBar: AppBar(
+        leadingWidth: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00BFFF), Color(0xFF32CD32)],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  title: 'Sắp hết hàng',
-                  value: '15', // TODO: Lấy dữ liệu thật
-                  icon: Icons.warning_amber,
-                  color: Colors.orange,
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Smart Warehouse',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
               ),
-            ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.person),
+            label: const Text('User'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Chức năng',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildFeatureCard(
-                context,
-                title: 'Quản lý sản phẩm',
-                icon: Icons.list_alt,
-                onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const ProductListScreen()));
-                },
-              ),
-              _buildFeatureCard(
-                context,
-                title: 'Nhập / Xuất kho',
-                icon: Icons.sync_alt,
-                onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const StockTransactionScreen()));
-                },
-              ),
-              _buildFeatureCard(
-                context,
-                title: 'Lịch sử giao dịch',
-                icon: Icons.history,
-                onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const HistoryScreen()));
-                },
-              ),
-              _buildFeatureCard(
-                context,
-                title: 'Báo cáo & Thống kê',
-                icon: Icons.bar_chart,
-                onTap: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const ReportScreen()));
-                },
-              ),
-            ],
-          ),
+          const SizedBox(width: 16),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatCard(BuildContext context,
-      {required String title,
-      required String value,
-      required IconData icon,
-      required Color color}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(title, style: TextStyle(color: Colors.grey[600])),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureCard(BuildContext context,
-      {required String title, required IconData icon, required VoidCallback onTap}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: Theme.of(context).primaryColor),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4, // số tab
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Smart Warehouse Manager'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Đăng xuất',
-              onPressed: () {
-                context.read<AuthBloc>().add(LogoutRequested());
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              },
+      body: ListView(
+        padding: const EdgeInsets.all(0),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [const Color(0xFF121212), const Color(0xFF0A2342)]
+                    : [
+                        const Color(0xFF00BFFF).withOpacity(0.15),
+                        const Color(0xFF32CD32).withOpacity(0.15)
+                      ],
               ),
-          ],
-        ),
-        body: const TabBarView(
-          children: [
-            DashboardContent(),
-            ProductListScreen(),
-            StockTransactionScreen(),
-            HistoryScreen(),
-          ],
-        ),
-        bottomNavigationBar: const Material(
-          color: Colors.white,
-          child: TabBar(
-            tabs: [
-              Tab(text: 'Dashboard', icon: Icon(Icons.dashboard)),
-              Tab(text: 'Products', icon: Icon(Icons.list_alt)),
-              Tab(text: 'Stock', icon: Icon(Icons.sync_alt)),
-              Tab(text: 'History', icon: Icon(Icons.history)),
-            ],
-            indicatorColor: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Bảng điều khiển',
+                            style: GoogleFonts.poppins(
+                                fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Dữ liệu cập nhật giả lập mỗi 3 giây',
+                          style: TextStyle(
+                              color: isDark
+                                  ? Colors.grey.shade300
+                                  : Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _showQRScannerDialog(context),
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Scan Item'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondary,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: MetricCard(
+                        title: 'Tồn kho',
+                        value: formatter.format(12450),
+                        change: '+2.1% hôm nay',
+                        isLive: true,
+                        liveColor: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: MetricCard(
+                        title: 'Cảnh báo',
+                        value: '3',
+                        change: 'Ưu tiên cao',
+                        isLive: false,
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const ChartCard(),
+              ],
+            ),
           ),
-        ),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                FlipItemCard(
+                  title: 'Pallet A12',
+                  sku: 'SW-1029',
+                  quantity: 320,
+                  details: [
+                    'Vị trí: Kệ B - Tầng 2',
+                    'HSD: 12/2025',
+                    'Trạng thái: Tốt',
+                  ],
+                  isExport: true,
+                ),
+                SizedBox(height: 16),
+                FlipItemCard(
+                  title: 'Crate Z55',
+                  sku: 'SW-5540',
+                  quantity: 58,
+                  details: [
+                    'Vị trí: Kệ D - Tầng 1',
+                    'HSD: 05/2026',
+                    'Trạng thái: Cần kiểm tra',
+                  ],
+                  isExport: false,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

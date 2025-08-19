@@ -23,6 +23,8 @@ dependencies:
   firebase_messaging: ^15.0.1
 
   # Các thư viện khác
+
+  google_fonts: ^6.2.1 
  
   provider: ^6.1.2
   intl: ^0.19.0
