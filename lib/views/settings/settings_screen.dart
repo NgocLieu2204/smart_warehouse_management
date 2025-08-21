@@ -72,7 +72,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 const SizedBox(height: 20),
                  Padding(
-                  padding: const EdgeInsets.all(8.0), // chỉ cái này mới const được
+                  padding: const EdgeInsets.all(8.0), 
                   child: NeumorphicButton(
                     onTap: () {
                       // Xử lý đăng xuất

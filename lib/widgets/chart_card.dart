@@ -68,31 +68,39 @@ class _ChartCardState extends State<ChartCard> {
               children: [
                 const Text('Biểu đồ xuất/nhập',
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 Row(
                   children: [
                     SizedBox(
-                      height: 30,
-                      child: ElevatedButton(
-                        onPressed: _updateData,
-                        child: const Text('Cập nhật',
-                            style: TextStyle(fontSize: 12)),
+                    height: 30,
+                    child: ElevatedButton(
+                      onPressed: _updateData,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(30, 30), // thu nhỏ nút
+                        padding: const EdgeInsets.symmetric(horizontal: 8), // thu hẹp padding ngang
+                        textStyle: const TextStyle(fontSize: 12),
                       ),
+                      child: const Text('Cập nhật'),
                     ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      height: 30,
-                      child: OutlinedButton(
-                        onPressed: _resetData,
-                        child:
-                            const Text('Reset', style: TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 30,
+                    child: OutlinedButton(
+                      onPressed: _resetData,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(30, 30),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        textStyle: const TextStyle(fontSize: 12),
                       ),
+                      child: const Text('Reset'),
                     ),
-                  ],
+                   ),
+                  ]
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             SizedBox(
               height: 120,
               child: LineChart(

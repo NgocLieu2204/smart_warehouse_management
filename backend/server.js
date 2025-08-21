@@ -2,14 +2,14 @@ const express = require('express');
 const { connectDB } = require('./configs/db');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const productRouter = require('./router/productRouter');
+const inventoryRouter = require('./router/InventoryRouter');
 
 dotenv.config();
 
 const app = express();
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
-app.use('/api/product', productRouter);
+app.use('/api/inventory', inventoryRouter);
 
 const PORT = process.env.PORT || 5000;
 

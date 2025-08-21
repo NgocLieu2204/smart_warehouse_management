@@ -1,5 +1,3 @@
-// lib/widgets/inventory/expanding_list_item.dart
-
 import 'package:flutter/material.dart';
 
 class ExpandingListItem extends StatefulWidget {
@@ -27,6 +25,7 @@ class ExpandingListItemState extends State<ExpandingListItem> {
 
   void expand() => setState(() => _isExpanded = true);
   void collapse() => setState(() => _isExpanded = false);
+  void toggleExpand() => setState(() => _isExpanded = !_isExpanded);
 
   @override
   Widget build(BuildContext context) {
@@ -34,16 +33,13 @@ class ExpandingListItemState extends State<ExpandingListItem> {
       child: Column(
         children: [
           InkWell(
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
+            onTap: toggleExpand,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Left
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -51,10 +47,10 @@ class ExpandingListItemState extends State<ExpandingListItem> {
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text('SKU: ${widget.sku}',
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
+                  // Right
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -62,8 +58,7 @@ class ExpandingListItemState extends State<ExpandingListItem> {
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text(widget.location,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey)),
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ],
@@ -93,11 +88,11 @@ class ExpandingListItemState extends State<ExpandingListItem> {
                       const SizedBox(width: 8),
                       OutlinedButton(onPressed: () {}, child: const Text('Nhập')),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );

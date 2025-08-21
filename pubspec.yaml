@@ -35,6 +35,8 @@ dependencies:
   equatable: ^2.0.7
   json_annotation: ^4.9.0
   dio: ^5.9.0
+  http: ^1.5.0
+  
 
 # =======================================================
 # Dev Dependencies: Thư viện chỉ dùng để phát triển và test
