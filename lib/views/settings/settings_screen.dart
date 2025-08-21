@@ -2,7 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import '../../widgets/buttton.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/auth/auth_event.dart';
+import '../../blocs/auth/auth_state.dart';
 class SettingsView extends StatefulWidget {
   const SettingsView({Key? key}) : super(key: key);
 
@@ -66,6 +70,26 @@ class _SettingsViewState extends State<SettingsView> {
                     textAlign: TextAlign.center,
                   ),
                 ),
+                const SizedBox(height: 20),
+                 Padding(
+                  padding: const EdgeInsets.all(8.0), // chỉ cái này mới const được
+                  child: NeumorphicButton(
+                    onTap: () {
+                      // Xử lý đăng xuất
+                      context.read<AuthBloc>().add(LogoutRequested());
+                    },
+                    child: Center( 
+                      child: Text(
+                        'Đăng xuất',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+
               ],
             ),
           ),
