@@ -1,86 +1,107 @@
 // lib/widgets/qr_scanner_dialog.dart
 
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QrScannerDialog extends StatefulWidget {
   const QrScannerDialog({Key? key}) : super(key: key);
 
   @override
-  _QrScannerDialogState createState() => _QrScannerDialogState();
+  State<QrScannerDialog> createState() => _QrScannerDialogState();
 }
 
 class _QrScannerDialogState extends State<QrScannerDialog> {
-  bool _isScanning = false;
   String? _scanResult;
+  bool _isScanning = true;
+  late MobileScannerController _cameraController;
 
-  void _startScan() {
-    setState(() {
-      _isScanning = true;
-      _scanResult = null;
-    });
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
+  @override
+  void initState() {
+    super.initState();
+    _cameraController = MobileScannerController(
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (!_isScanning) return;
+
+    final List<Barcode> barcodes = capture.barcodes;
+    if (barcodes.isNotEmpty) {
+      final String? code = barcodes.first.rawValue;
+      if (code != null) {
         setState(() {
+          _scanResult = code;
           _isScanning = false;
-          final code = 1000 + Random().nextInt(8999);
-          _scanResult = 'SW-QR-$code';
         });
+        _cameraController.stop();
       }
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('Quét mã (Demo)',
+      title: Text('Quét mã sản phẩm',
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 180,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(child: Text('Camera preview (minh họa)')),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Bản demo sẽ trả về mã giả lập sau vài giây.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          if (_scanResult != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12.0),
-              child: Chip(
-                backgroundColor: Colors.green.shade100,
-                label: Text('Kết quả: $_scanResult',
-                    style: TextStyle(color: Colors.green.shade900)),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 350,
+        child: Column(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: MobileScanner(
+                  controller: _cameraController,
+                  onDetect: _onDetect,
+                ),
               ),
             ),
-        ],
+            const SizedBox(height: 8),
+            if (_scanResult != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12.0),
+                child: Chip(
+                  backgroundColor: Colors.green.shade100,
+                  label: Text('Kết quả: $_scanResult',
+                      style: TextStyle(color: Colors.green.shade900)),
+                ),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.only(top: 12.0),
+                child: Text(
+                  'Đưa mã QR/barcode vào vùng quét',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+          ],
+        ),
       ),
-      actions: <Widget>[
+      actions: [
         TextButton(
           child: const Text('Đóng'),
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(_scanResult);
           },
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.secondary,
-            foregroundColor: Colors.black,
+        if (!_isScanning && _scanResult != null)
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(_scanResult);
+            },
+            child: const Text('Xác nhận'),
           ),
-          onPressed: _isScanning ? null : _startScan,
-          child: Text(_isScanning ? 'Đang quét…' : 'Bắt đầu quét'),
-        ),
       ],
     );
   }
