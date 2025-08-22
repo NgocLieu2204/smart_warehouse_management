@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-// Model đơn giản để đại diện cho một tin nhắn
 class ChatMessage {
   final String text;
   final bool isSentByMe;
@@ -19,28 +20,55 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _messages = [];
 
+  // Hàm gửi API
+  Future<void> _sendMessageToAPI(String text) async {
+    try {
+      final response = await http.post(
+        Uri.parse("https://nhitran.app.n8n.cloud/webhook-test/2454f903-5896-4fdc-bca4-c042c578cf1d"), // 👈 đổi sang API của bạn
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"message": text , "sessionId": "12345"}), // 👈 thêm session_id nếu cần
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final reply = data["reply"] ?? "Bot không có phản hồi."; // 👈 lấy key từ API
+
+        setState(() {
+          _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
+        });
+      } else {
+        setState(() {
+          _messages.insert(0, ChatMessage(text: "Lỗi server (${response.statusCode})", isSentByMe: false));
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messages.insert(0, ChatMessage(text: "Lỗi kết nối: $e", isSentByMe: false));
+      });
+    }
+  }
+
   void _handleSubmitted(String text) {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
     setState(() {
       _messages.insert(0, ChatMessage(text: text, isSentByMe: true));
-      // TODO: Thêm logic để nhận phản hồi từ bot/AI
     });
+
+    // Gửi API sau khi gửi tin nhắn
+    _sendMessageToAPI(text);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Lấy màu chính từ theme của ứng dụng
     final themeColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // CHỈNH SỬA 1: Dùng màu theme cho AppBar
         backgroundColor: themeColor,
         elevation: 1,
-        // Tự động điều chỉnh màu chữ và icon trên AppBar thành màu trắng
         title: const Text('Chat AI Agent'),
       ),
       body: Column(
@@ -49,14 +77,14 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _messages.isEmpty
                 ? _buildInitialSuggestions()
                 : ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              reverse: true,
-              itemCount: _messages.length,
-              itemBuilder: (_, int index) {
-                final message = _messages[index];
-                return _buildMessageBubble(message, themeColor);
-              },
-            ),
+                    padding: const EdgeInsets.all(16.0),
+                    reverse: true,
+                    itemCount: _messages.length,
+                    itemBuilder: (_, int index) {
+                      final message = _messages[index];
+                      return _buildMessageBubble(message, themeColor);
+                    },
+                  ),
           ),
           _buildTextComposer(themeColor),
         ],
@@ -64,10 +92,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Giao diện ban đầu với các gợi ý
   Widget _buildInitialSuggestions() {
-     // ... (Không thay đổi)
-     return Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -79,14 +105,13 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(height: 24),
           _buildSuggestionChip("Tìm kiếm sản phẩm..."),
-          _buildSuggestionChip("Tạo báo cáo tồn kho"),
+          _buildSuggestionChip("cho tôi biết tồn kho sản phẩm SP002 ?"),
         ],
       ),
     );
   }
 
-   Widget _buildSuggestionChip(String text) {
-     // ... (Không thay đổi)
+  Widget _buildSuggestionChip(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: ActionChip(
@@ -97,8 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-  
-  // Widget cho ô nhập tin nhắn
+
   Widget _buildTextComposer(Color themeColor) {
     return Container(
       margin: const EdgeInsets.all(12.0),
@@ -112,7 +136,7 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.add, color: Colors.black54),
             onPressed: () {
-               ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Chức năng tạo ảnh (Demo).')),
               );
             },
@@ -128,7 +152,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           IconButton(
-            // CHỈNH SỬA 2: Dùng màu theme cho nút gửi
             icon: Icon(Icons.send, color: themeColor),
             onPressed: () => _handleSubmitted(_textController.text),
           ),
@@ -137,10 +160,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Widget cho mỗi bong bóng chat
   Widget _buildMessageBubble(ChatMessage message, Color themeColor) {
-    final align = message.isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    // CHỈNH SỬA 3: Dùng màu theme cho bong bóng chat của người gửi
+    final align =
+        message.isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final color = message.isSentByMe ? themeColor : Colors.grey[300];
     final textColor = message.isSentByMe ? Colors.white : Colors.black;
 
@@ -150,7 +172,8 @@ class _ChatScreenState extends State<ChatScreen> {
         crossAxisAlignment: align,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(20.0),

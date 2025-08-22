@@ -92,27 +92,33 @@ class DashboardView extends StatelessWidget {
                       children: [
                         Text('Bảng điều khiển',
                             style: GoogleFonts.poppins(
-                                fontSize: 22, fontWeight: FontWeight.bold)),
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         Text(
                           'Dữ liệu cập nhật giả lập mỗi 3 giây',
                           style: TextStyle(
+                            fontSize: 13,
                               color: isDark
                                   ? Colors.grey.shade300
-                                  : Colors.grey.shade600),
+                                  : Colors.grey.shade600
+                          ),
                         ),
                       ],
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showQRScannerDialog(context),
-                      icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text('Scan Item'),
+                      icon: const Icon(Icons.qr_code_scanner, size: 16),
+                      label: const Text(
+                        'Scan me',
+                        style: TextStyle(fontSize: 12), 
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary,
+                        backgroundColor: Theme.of(context).colorScheme.secondary,
+                        minimumSize: const Size(30, 30), 
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
                         foregroundColor: Colors.black,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                     )
