@@ -1,12 +1,10 @@
-// lib/views/main/main_screen.dart (ĐÃ CẬP NHẬT)
-
 import 'package:flutter/material.dart';
-// Sửa đường dẫn import cho đúng với cấu trúc dự án của bạn
-import '../../widgets/main/custom_bottom_nav_bar.dart'; 
+import '../../widgets/main/custom_bottom_nav_bar.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../inventory/inventory_screen.dart';
 import '../orders/orders_screen.dart';
 import '../settings/settings_screen.dart';
+import '../../widgets/floating_chatbox.dart'; // Import widget chatbox
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -17,12 +15,14 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  final ValueNotifier<bool> _isChatboxLoading = ValueNotifier<bool>(false);
 
+  // Danh sách các màn hình
   static final List<Widget> _widgetOptions = <Widget>[
-    const DashboardView(),
-    const InventoryView(),
-    const OrdersView(),
-    const SettingsView(),
+    DashboardView(),
+    InventoryView(),
+    OrdersView(),
+    SettingsView(),
   ];
 
   void _onItemTapped(int index) {
@@ -31,32 +31,48 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  void _simulateSearch() async {
+    _isChatboxLoading.value = true;
+    await Future.delayed(const Duration(seconds: 3));
+    _isChatboxLoading.value = false;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tìm kiếm hoàn tất!')),
+    );
+  }
+
+  @override
+  void dispose() {
+    _isChatboxLoading.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Thuộc tính này cho phép body hiển thị phía sau thanh điều hướng
-      extendBody: true, 
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _widgetOptions,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Mở form nhập hàng mới (Demo).')),
-          );
-        },
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        child: const Icon(Icons.add, color: Colors.black),
-        elevation: 4.0,
-      ),
-      // Đặt vị trí FAB ở trung tâm và "dock" vào thanh điều hướng
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked, 
-      // Sử dụng widget thanh điều hướng mới
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
-      ),
+    return Stack(
+      children: [
+        Scaffold(
+          // Bỏ 'extendBody' để nội dung không bị thanh điều hướng che
+          body: IndexedStack(
+            index: _selectedIndex,
+            children: _widgetOptions,
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _simulateSearch,
+            // Đổi màu nền sang màu vàng
+            backgroundColor: Colors.amber, 
+            child: const Icon(Icons.search, color: Colors.black),
+            elevation: 4.0,
+          ),
+          // Bỏ 'floatingActionButtonLocation' để nút tự động về góc phải dưới
+          bottomNavigationBar: CustomBottomNavBar(
+            selectedIndex: _selectedIndex,
+            onItemTapped: _onItemTapped,
+          ),
+        ),
+        // Nút chatbox vẫn giữ nguyên
+        FloatingChatbox(isLoading: _isChatboxLoading),
+      ],
     );
   }
 }

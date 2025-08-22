@@ -17,7 +17,7 @@ class _InventoryViewState extends State<InventoryView> {
   bool _loading = true;
   String? _error;
 
-  final String baseUrl = "http://localhost:5000/api/inventory";
+  final String baseUrl = "http://10.0.2.2:5000/api/inventory";
 
   @override
   void initState() {
