@@ -7,6 +7,9 @@ class ExpandingListItem extends StatefulWidget {
   final String location;
   final String status;
 
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
   const ExpandingListItem({
     Key? key,
     required this.name,
@@ -14,6 +17,8 @@ class ExpandingListItem extends StatefulWidget {
     required this.quantity,
     required this.location,
     required this.status,
+    this.onEdit,
+    this.onDelete,
   }) : super(key: key);
 
   @override
@@ -87,6 +92,17 @@ class ExpandingListItemState extends State<ExpandingListItem> {
                       ElevatedButton(onPressed: () {}, child: const Text('Xuất')),
                       const SizedBox(width: 8),
                       OutlinedButton(onPressed: () {}, child: const Text('Nhập')),
+                      const Spacer(),
+                      if (widget.onEdit != null)
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: widget.onEdit,
+                        ),
+                      if (widget.onDelete != null)
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: widget.onDelete,
+                        ),
                     ],
                   ),
                 ],

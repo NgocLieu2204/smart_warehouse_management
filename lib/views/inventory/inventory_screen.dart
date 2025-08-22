@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import '../../widgets//expanding_list_item.dart';
+import '../../widgets/expanding_list_item.dart';
 
 class InventoryView extends StatefulWidget {
   const InventoryView({Key? key}) : super(key: key);
@@ -17,6 +17,8 @@ class _InventoryViewState extends State<InventoryView> {
   bool _loading = true;
   String? _error;
 
+  final String baseUrl = "http://localhost:5000/api/inventory";
+
   @override
   void initState() {
     super.initState();
@@ -25,10 +27,7 @@ class _InventoryViewState extends State<InventoryView> {
 
   Future<void> fetchInventoryData() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://localhost:5000/api/inventory/getInventory'), // Android Emulator
-      );
-
+      final response = await http.get(Uri.parse('$baseUrl/getInventory'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -51,6 +50,64 @@ class _InventoryViewState extends State<InventoryView> {
     }
   }
 
+  Future<void> _showInventoryDialog({Map<String, dynamic>? item}) async {
+    final nameCtrl = TextEditingController(text: item?['name'] ?? '');
+    final skuCtrl = TextEditingController(text: item?['sku'] ?? '');
+    final qtyCtrl = TextEditingController(text: '${item?['qty'] ?? ''}');
+    final whCtrl = TextEditingController(text: item?['wh'] ?? '');
+    final isUpdate = item != null;
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(isUpdate ? "Cập nhật" : "Thêm mới"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Tên")),
+            TextField(controller: skuCtrl, decoration: const InputDecoration(labelText: "SKU")),
+            TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "Số lượng"), keyboardType: TextInputType.number),
+            TextField(controller: whCtrl, decoration: const InputDecoration(labelText: "Vị trí")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
+          ElevatedButton(
+            child: Text(isUpdate ? "Cập nhật" : "Thêm"),
+            onPressed: () async {
+              final body = {
+                "name": nameCtrl.text,
+                "sku": skuCtrl.text,
+                "qty": int.tryParse(qtyCtrl.text) ?? 0,
+                "wh": whCtrl.text,
+              };
+
+              final uri = isUpdate
+                  ? Uri.parse('$baseUrl/updateInventory/${item!['sku']}')
+                  : Uri.parse('$baseUrl/createInventory');
+
+              final resp = isUpdate
+                  ? await http.put(uri, headers: {"Content-Type": "application/json"}, body: json.encode(body))
+                  : await http.post(uri, headers: {"Content-Type": "application/json"}, body: json.encode(body));
+
+              if (resp.statusCode == 200 || resp.statusCode == 201) {
+                Navigator.pop(context);
+                fetchInventoryData();
+              }
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteItem(String sku) async {
+    final resp = await http.delete(Uri.parse('$baseUrl/deleteInventory/$sku'));
+    if (resp.statusCode == 200) {
+      fetchInventoryData();
+    }
+  }
+
   void _expandAll() {
     for (var key in _keys) {
       key.currentState?.expand();
@@ -66,25 +123,20 @@ class _InventoryViewState extends State<InventoryView> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     if (_error != null) {
-      return Scaffold(
-        body: Center(child: Text('Lỗi: $_error')),
-      );
+      return Scaffold(body: Center(child: Text("Lỗi: $_error")));
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Hàng tồn kho',
+        title: Text("Hàng tồn kho",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         actions: [
           IconButton(onPressed: _expandAll, icon: const Icon(Icons.unfold_more)),
           IconButton(onPressed: _collapseAll, icon: const Icon(Icons.unfold_less)),
-          const SizedBox(width: 8)
+          IconButton(onPressed: () => _showInventoryDialog(), icon: const Icon(Icons.add)),
         ],
       ),
       body: ListView.separated(
@@ -99,7 +151,9 @@ class _InventoryViewState extends State<InventoryView> {
             sku: item['sku'],
             quantity: item['qty'],
             location: item['wh'],
-            status: item['status'] ?? 'Còn hàng',
+            status: item['status'] ?? "Còn hàng",
+            onEdit: () => _showInventoryDialog(item: item),
+            onDelete: () => _deleteItem(item['sku']),
           );
         },
       ),

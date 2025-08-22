@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const inventoryRouter = require('./router/InventoryRouter');
 
+
 dotenv.config();
 
 const app = express();

@@ -5,4 +5,10 @@ const router = express.Router();
 
 // Lấy danh sách kho hàng
 router.get('/getInventory', InventoryControlller.getInventory);
+router.get('/getInventory/:sku', InventoryControlller.getInventoryBySku);
+// Tạo mới kho hàng
+router.post('/createInventory', InventoryControlller.createInventory);
+// Cập nhật kho hàng
+router.put('/updateInventory/:sku', InventoryControlller.updateInventory);
+router.delete('/deleteInventory/:sku', InventoryControlller.deleteInventory);
 module.exports = router;
