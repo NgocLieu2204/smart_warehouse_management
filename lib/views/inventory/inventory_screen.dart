@@ -17,6 +17,8 @@ class _InventoryViewState extends State<InventoryView> {
   bool _loading = true;
   String? _error;
 
+  // Sử dụng IP của máy thật nếu chạy trên thiết bị thật,
+  // hoặc 10.0.2.2 cho Android emulator.
   final String baseUrl = "http://10.0.2.2:5000/api/inventory";
 
   @override
@@ -26,27 +28,33 @@ class _InventoryViewState extends State<InventoryView> {
   }
 
   Future<void> fetchInventoryData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final response = await http.get(Uri.parse('$baseUrl/getInventory'));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        // Decode an toàn hơn với utf8
+        final data = json.decode(utf8.decode(response.bodyBytes));
         setState(() {
           _inventoryList = data;
           _keys = List.generate(
               _inventoryList.length, (_) => GlobalKey<ExpandingListItemState>());
-          _loading = false;
         });
       } else {
         setState(() {
-          _error = 'Failed to load inventory data';
-          _loading = false;
+          _error = 'Failed to load inventory data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
       setState(() {
-        _error = e.toString();
-        _loading = false;
+        _error = "Error connecting to server: ${e.toString()}";
       });
+    } finally {
+        setState(() {
+          _loading = false;
+        });
     }
   }
 
@@ -55,20 +63,24 @@ class _InventoryViewState extends State<InventoryView> {
     final skuCtrl = TextEditingController(text: item?['sku'] ?? '');
     final qtyCtrl = TextEditingController(text: '${item?['qty'] ?? ''}');
     final whCtrl = TextEditingController(text: item?['wh'] ?? '');
+    final imageUrlCtrl = TextEditingController(text: item?['imageUrl'] ?? ''); // Thêm controller cho imageUrl
     final isUpdate = item != null;
 
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(isUpdate ? "Cập nhật" : "Thêm mới"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Tên")),
-            TextField(controller: skuCtrl, decoration: const InputDecoration(labelText: "SKU")),
-            TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "Số lượng"), keyboardType: TextInputType.number),
-            TextField(controller: whCtrl, decoration: const InputDecoration(labelText: "Vị trí")),
-          ],
+        title: Text(isUpdate ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Tên sản phẩm")),
+              TextField(controller: skuCtrl, decoration: const InputDecoration(labelText: "SKU")),
+              TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "Số lượng"), keyboardType: TextInputType.number),
+              TextField(controller: whCtrl, decoration: const InputDecoration(labelText: "Vị trí kho")),
+              TextField(controller: imageUrlCtrl, decoration: const InputDecoration(labelText: "URL Hình ảnh")), // Thêm TextField cho imageUrl
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
@@ -80,6 +92,7 @@ class _InventoryViewState extends State<InventoryView> {
                 "sku": skuCtrl.text,
                 "qty": int.tryParse(qtyCtrl.text) ?? 0,
                 "wh": whCtrl.text,
+                "imageUrl": imageUrlCtrl.text, // Thêm imageUrl vào body
               };
 
               final uri = isUpdate
@@ -90,9 +103,17 @@ class _InventoryViewState extends State<InventoryView> {
                   ? await http.put(uri, headers: {"Content-Type": "application/json"}, body: json.encode(body))
                   : await http.post(uri, headers: {"Content-Type": "application/json"}, body: json.encode(body));
 
-              if (resp.statusCode == 200 || resp.statusCode == 201) {
-                Navigator.pop(context);
-                fetchInventoryData();
+              if (mounted) {
+                if (resp.statusCode == 200 || resp.statusCode == 201) {
+                  Navigator.pop(context);
+                  fetchInventoryData();
+                } else {
+                  // Hiển thị lỗi nếu có
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Lỗi: ${resp.body}'),
+                    backgroundColor: Colors.red,
+                  ));
+                }
               }
             },
           )
@@ -122,41 +143,54 @@ class _InventoryViewState extends State<InventoryView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (_error != null) {
-      return Scaffold(body: Center(child: Text("Lỗi: $_error")));
-    }
+    Widget body;
 
+    if (_loading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (_error != null) {
+      body = Center(child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text("Lỗi: $_error", textAlign: TextAlign.center),
+      ));
+    } else if (_inventoryList.isEmpty) {
+        body = const Center(child: Text("Không có sản phẩm nào trong kho."));
+    }
+    else {
+      body = RefreshIndicator(
+        onRefresh: fetchInventoryData,
+        child: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: _inventoryList.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final item = _inventoryList[index];
+            return ExpandingListItem(
+              key: _keys[index],
+              name: item['name'] ?? 'Không có tên',
+              sku: item['sku'] ?? 'N/A',
+              quantity: item['qty'] ?? 0,
+              location: item['wh'] ?? 'N/A',
+              status: item['status'] ?? "Còn hàng",
+              imageUrl: item['imageUrl'], // **TRUYỀN URL ẢNH VÀO WIDGET**
+              onEdit: () => _showInventoryDialog(item: item),
+              onDelete: () => _deleteItem(item['sku']),
+            );
+          },
+        ),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: Text("Hàng tồn kho",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         actions: [
-          IconButton(onPressed: _expandAll, icon: const Icon(Icons.unfold_more)),
-          IconButton(onPressed: _collapseAll, icon: const Icon(Icons.unfold_less)),
-          IconButton(onPressed: () => _showInventoryDialog(), icon: const Icon(Icons.add)),
+          IconButton(onPressed: _expandAll, icon: const Icon(Icons.unfold_more), tooltip: 'Mở rộng tất cả'),
+          IconButton(onPressed: _collapseAll, icon: const Icon(Icons.unfold_less), tooltip: 'Thu gọn tất cả'),
+          IconButton(onPressed: () => _showInventoryDialog(), icon: const Icon(Icons.add), tooltip: 'Thêm sản phẩm'),
         ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _inventoryList.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = _inventoryList[index];
-          return ExpandingListItem(
-            key: _keys[index],
-            name: item['name'],
-            sku: item['sku'],
-            quantity: item['qty'],
-            location: item['wh'],
-            status: item['status'] ?? "Còn hàng",
-            onEdit: () => _showInventoryDialog(item: item),
-            onDelete: () => _deleteItem(item['sku']),
-          );
-        },
-      ),
+      body: body,
     );
   }
 }
