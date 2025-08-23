@@ -24,7 +24,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (token != null) {
         emit(AuthAuthenticated(token));
       } else {
-        emit(AuthError(message: 'Login failed'));
+        emit(AuthError(message: 'Tài khoản hoặc mật khẩu không chính xác, vui lòng nhập lại.'));
       }
     } catch (e) {
       emit(AuthError(message: e.toString()));
