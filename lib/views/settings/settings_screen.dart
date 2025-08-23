@@ -1,12 +1,13 @@
-// lib/views/settings/settings_screen.dart
+// lib/views/settings/settings_screen.dart (ĐÃ HOÀN THIỆN)
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../widgets/buttton.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
-import '../../blocs/auth/auth_state.dart';
+import '../../blocs/theme/theme_bloc.dart';
+
 class SettingsView extends StatefulWidget {
   const SettingsView({Key? key}) : super(key: key);
 
@@ -15,11 +16,12 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  bool _isDarkMode = false;
   String _role = 'user';
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = context.watch<ThemeBloc>().state.themeMode == ThemeMode.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Cài đặt',
@@ -36,11 +38,9 @@ class _SettingsViewState extends State<SettingsView> {
               children: [
                 SwitchListTile(
                   title: const Text('Chế độ tối'),
-                  value: _isDarkMode,
+                  value: isDarkMode,
                   onChanged: (bool value) {
-                    setState(() {
-                      _isDarkMode = value;
-                    });
+                    context.read<ThemeBloc>().add(ThemeChanged(isDarkMode: value));
                   },
                 ),
                 ListTile(
@@ -72,13 +72,12 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
                 const SizedBox(height: 20),
                  Padding(
-                  padding: const EdgeInsets.all(8.0), 
+                  padding: const EdgeInsets.all(8.0),
                   child: NeumorphicButton(
                     onTap: () {
-                      // Xử lý đăng xuất
                       context.read<AuthBloc>().add(LogoutRequested());
                     },
-                    child: Center( 
+                    child: const Center(
                       child: Text(
                         'Đăng xuất',
                         style: TextStyle(
@@ -89,7 +88,6 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                   ),
                 )
-
               ],
             ),
           ),

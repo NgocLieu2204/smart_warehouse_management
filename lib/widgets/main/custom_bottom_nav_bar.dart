@@ -1,3 +1,5 @@
+// lib/widgets/custom_bottom_nav_bar.dart
+
 import 'package:flutter/material.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
@@ -12,7 +14,8 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sử dụng BottomNavigationBar tiêu chuẩn để có góc vuông
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return BottomNavigationBar(
       items: const <BottomNavigationBarItem>[
         BottomNavigationBarItem(
@@ -34,12 +37,12 @@ class CustomBottomNavBar extends StatelessWidget {
       ],
       currentIndex: selectedIndex,
       onTap: onItemTapped,
-      // Các thuộc tính để đảm bảo giao diện đẹp và hoạt động đúng
-      type: BottomNavigationBarType.fixed, // Luôn hiển thị label
-      backgroundColor: Colors.white,
-      selectedItemColor: Theme.of(context).primaryColor, // Màu cho mục đang chọn
-      unselectedItemColor: Colors.grey, // Màu cho các mục khác
-      elevation: 8.0, // Thêm đổ bóng cho thanh điều hướng
+      type: BottomNavigationBarType.fixed,
+      // Thay đổi màu nền dựa trên theme
+      backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      selectedItemColor: Theme.of(context).colorScheme.primary,
+      unselectedItemColor: Colors.grey,
+      elevation: 8.0,
     );
   }
 }

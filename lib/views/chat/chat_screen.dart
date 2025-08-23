@@ -24,14 +24,14 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendMessageToAPI(String text) async {
     try {
       final response = await http.post(
-        Uri.parse("https://nhitran.app.n8n.cloud/webhook-test/2454f903-5896-4fdc-bca4-c042c578cf1d"), // 👈 đổi sang API của bạn
+        Uri.parse("https://nlieu.app.n8n.cloud/webhook-test/2454f903-5896-4fdc-bca4-c042c578cf1d"), // 👈 đổi sang API của bạn
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"message": text , "sessionId": "12345"}), // 👈 thêm session_id nếu cần
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final reply = data["reply"] ?? "Bot không có phản hồi."; // 👈 lấy key từ API
+        final reply = data["output"] ?? "Bot không có phản hồi."; // 👈 lấy key từ API
 
         setState(() {
           _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
