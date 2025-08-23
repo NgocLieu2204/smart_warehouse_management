@@ -1,3 +1,5 @@
+// lib/views/auth/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -20,12 +22,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // XÓA BỎ BlocProvider ở đây
     return Scaffold(
       backgroundColor: const Color(0xFFE0E5EC),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          // Chỉ cần hiển thị lỗi, AuthWrapper sẽ tự điều hướng
           if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message ?? 'An error occurred')),
@@ -39,7 +39,8 @@ class _LoginPageState extends State<LoginPage> {
             return SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 30.0, vertical: 20.0),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -69,14 +70,16 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 8),
                         const Text(
                           'Made easy!',
-                          style: TextStyle(fontSize: 16, color: Colors.blueGrey),
+                          style:
+                              TextStyle(fontSize: 16, color: Colors.blueGrey),
                         ),
                         const SizedBox(height: 50),
                         _buildNeumorphicTextField(
                           controller: _emailController,
                           hintText: 'username',
                           icon: Icons.person_outline,
-                          validator: (val) => val!.isEmpty ? 'Please enter an email' : null,
+                          validator: (val) =>
+                              val!.isEmpty ? 'Please enter an email' : null,
                         ),
                         const SizedBox(height: 25),
                         _buildNeumorphicTextField(
@@ -92,27 +95,57 @@ class _LoginPageState extends State<LoginPage> {
                         if (isLoading)
                           const CircularProgressIndicator()
                         else
-                          NeumorphicButton(
-                            onTap: () {
-                              if (_formKey.currentState!.validate()) {
-                                // Gửi sự kiện đến AuthBloc TOÀN CỤC
-                                context.read<AuthBloc>().add(
-                                      LoginRequested(
-                                        username: _emailController.text.trim(),
-                                        password: _passwordController.text.trim(),
-                                      ),
-                                    );
-                              }
-                            },
-                            backgroundColor: const Color(0xFF6D98E1),
-                            child: const Text(
-                              'Login',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.white,
+                          Column(
+                            children: [
+                              NeumorphicButton(
+                                onTap: () {
+                                  if (_formKey.currentState!.validate()) {
+                                    context.read<AuthBloc>().add(
+                                          LoginRequested(
+                                            username:
+                                                _emailController.text.trim(),
+                                            password:
+                                                _passwordController.text.trim(),
+                                          ),
+                                        );
+                                  }
+                                },
+                                backgroundColor: const Color(0xFF6D98E1),
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 20),
+                              NeumorphicButton(
+                                onTap: () {
+                                  context
+                                      .read<AuthBloc>()
+                                      .add(LoginWithGoogleRequested());
+                                },
+                                backgroundColor: Colors.white,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset('assets/google_logo.png',
+                                        height: 24.0),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Sign in with Google',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            ],
                           ),
                         const SizedBox(height: 30),
                         Row(
@@ -122,12 +155,16 @@ class _LoginPageState extends State<LoginPage> {
                               'Forgot password? ',
                               style: TextStyle(color: Colors.blueGrey),
                             ),
-                            const Text("OR ", style: TextStyle(color: Colors.blueGrey),),
+                            const Text(
+                              "OR ",
+                              style: TextStyle(color: Colors.blueGrey),
+                            ),
                             GestureDetector(
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                      builder: (_) => const RegisterScreen()),
+                                      builder: (_) =>
+                                          const RegisterScreen()),
                                 );
                               },
                               child: const Text(
@@ -188,7 +225,8 @@ class _LoginPageState extends State<LoginPage> {
           hintStyle: const TextStyle(color: Colors.blueGrey),
           prefixIcon: Icon(icon, color: Colors.blueGrey, size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
       ),
     );

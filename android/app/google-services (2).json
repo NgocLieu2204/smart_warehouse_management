@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "358939117466",
+    "project_id": "smartwarehousemanager-1523c",
+    "storage_bucket": "smartwarehousemanager-1523c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:358939117466:android:900e31e5417589a7885c23",
+        "android_client_info": {
+          "package_name": "com.example.smart_warehouse_manager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "358939117466-qk2add4iq7fipcslhemb4pankophi83t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smart_warehouse_manager",
+            "certificate_hash": "2634773489e14c95cada790a5477d85bc617c76b"
+          }
+        },
+        {
+          "client_id": "358939117466-qk0url9on7clapeiah522c20jqhoh7nf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBujvW9gJfI3-460MQj_31o5hURP1oBAiA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "358939117466-qk0url9on7clapeiah522c20jqhoh7nf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "358939117466-irvq1905768ugu68rkumgk9j9hfh65ni.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.smartWarehouseManager"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
