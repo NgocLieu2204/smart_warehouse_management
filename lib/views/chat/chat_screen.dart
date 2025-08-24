@@ -24,15 +24,14 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendMessageToAPI(String text) async {
     try {
       final response = await http.post(
-        Uri.parse("https://nlieu.app.n8n.cloud/webhook-test/2454f903-5896-4fdc-bca4-c042c578cf1d"), // 👈 đổi sang API của bạn
+        Uri.parse("http://10.0.2.2:8000/ask"), // gửi đến ai_agent
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"message": text , "sessionId": "12345"}), // 👈 thêm session_id nếu cần
+        body: jsonEncode({"query": text}),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final reply = data["output"] ?? "Bot không có phản hồi."; // 👈 lấy key từ API
-
+        final reply = data["response"] ?? "Bot không có phản hồi";
         setState(() {
           _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
         });
@@ -47,6 +46,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     }
   }
+
 
   void _handleSubmitted(String text) {
     if (text.trim().isEmpty) return;
@@ -105,7 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(height: 24),
           _buildSuggestionChip("Tìm kiếm sản phẩm..."),
-          _buildSuggestionChip("cho tôi biết tồn kho sản phẩm SP002 ?"),
+          _buildSuggestionChip("Giao dịch gần nhất do student01 thực hiện?"),
         ],
       ),
     );
