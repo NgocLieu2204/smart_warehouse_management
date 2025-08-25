@@ -175,6 +175,33 @@ def rebuild_and_sync_inventory() -> str:
         updated += 1
     return f"✅ Đã đồng bộ và cập nhật tồn kho cho {updated} SKU."
 
+
+# ============================================================
+# Wrapper cho các Tool (để check input và hỏi lại nếu thiếu)
+# ============================================================
+def stock_tool(args: str) -> str:
+    sku = args.strip()
+    if not sku:
+        return " Bạn muốn kiểm tra tồn kho của sản phẩm nào? Vui lòng cung cấp mã SKU."
+    return get_stock_by_sku(sku)
+
+def transaction_history_tool(args: str) -> str:
+    sku = args.strip()
+    if not sku:
+        return " Bạn muốn xem lịch sử giao dịch của sản phẩm nào? Vui lòng cung cấp mã SKU."
+    return get_transaction_history(sku)
+
+def search_transactions_tool(args: str) -> str:
+    if not args.strip():
+        return " Bạn muốn tìm giao dịch theo SKU nào hoặc tiêu chí nào? Hãy cung cấp JSON filter."
+    try:
+        params = json.loads(args)
+    except Exception as e:
+        return f" Lỗi parse input: {e}"
+    return search_transactions(by=params.get("by"),
+                               wh=params.get("wh"),
+                               sku=params.get("sku"),
+                               limit=int(params.get("limit", 10)))
 # ============================================================
 # Khởi tạo danh sách Tools
 # ============================================================
@@ -193,6 +220,10 @@ tools = [
          description="Cập nhật tồn kho cơ bản từ transaction log."),
     Tool(name="MongoDBRebuildAndSyncInventory", func=rebuild_and_sync_inventory,
          description="Đồng bộ inventory nâng cao từ transaction log."),
+     Tool(name="MongoDBStockChecker", func=stock_tool,
+         description="Kiểm tra tồn kho hiện tại. Nếu người dùng chưa nhập SKU, hãy yêu cầu họ nhập SKU."),
+    Tool(name="MongoDBTransactionHistory", func=transaction_history_tool,
+         description="Lấy lịch sử giao dịch của SKU. Nếu chưa có SKU thì hỏi lại."),
 ]
 
 # ============================================================
