@@ -21,39 +21,50 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
 
   // Hàm gửi API
-  // Hàm gửi API
-Future<void> _sendMessageToAPI(String text) async {
-  try {
-    final response = await http.post(
-      Uri.parse("http://10.0.2.2:8000/ask"), // gửi đến ai_agent
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"query": text}),
-    );
+   Future<void> _sendMessageToAPI(String text) async {
+      try {
+        final response = await http.post(
+          Uri.parse("http://10.0.2.2:8000/ask"),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({"query": text}),
+        );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
 
-      // Nếu không có key response thì fallback
-      final reply = (data["response"] != null && data["response"].toString().trim().isNotEmpty)
-          ? data["response"]
-          : "🤖 Bot không tìm thấy câu trả lời";
+          // Nếu bot yêu cầu thêm thông tin
+          if (data["need_more_info"] == true) {
+            setState(() {
+              _messages.insert(
+                0,
+                ChatMessage(
+                  text: "🤖 Tôi cần thêm thông tin để trả lời.\n👉 ${data["suggestions"]?.join("\n👉 ") ?? "Vui lòng nhập chi tiết hơn."}",
+                  isSentByMe: false,
+                ),
+              );
+            });
+            return;
+          }
 
-      setState(() {
-        _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
-      });
-    } else {
-      // Trường hợp lỗi server
-      setState(() {
-        _messages.insert(0, ChatMessage(text: "🤖 Lỗi server", isSentByMe: false));
-      });
+          // Trả lời bình thường
+          final reply = (data["response"] != null && data["response"].toString().trim().isNotEmpty)
+              ? data["response"]
+              : "🤖 Bot không tìm thấy câu trả lời.\n👉 Vui lòng nhập câu hỏi khác.";
+
+          setState(() {
+            _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
+          });
+        } else {
+          setState(() {
+            _messages.insert(0, ChatMessage(text: "🤖 Lỗi server", isSentByMe: false));
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _messages.insert(0, ChatMessage(text: "🤖 Lỗi kết nối", isSentByMe: false));
+        });
+      }
     }
-  } catch (e) {
-    // Trường hợp lỗi kết nối hoặc exception khác
-    setState(() {
-      _messages.insert(0, ChatMessage(text: "🤖 Lỗi kết nối", isSentByMe: false));
-    });
-  }
-}
 
 
 

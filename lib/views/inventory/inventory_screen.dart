@@ -199,10 +199,10 @@ class _InventoryViewState extends State<InventoryView> {
               name: item['name'] ?? 'Không có tên',
               sku: item['sku'] ?? 'N/A',
               quantity: item['qty'] ?? 0,
-              uom: item['uom'] ?? "EA",   // ✅ thêm uom
-              wh: item['wh'] ?? 'N/A',    // ✅ thêm wh
+              uom: item['uom'] ?? "EA",   
+              wh: item['wh'] ?? 'N/A',    
               location: item['location'] ?? 'N/A',
-              exp: item['exp'] ?? "N/A",  // ✅ thêm exp
+              exp: item['exp'] ?? "N/A",  
               imageUrl: item['imageUrl'],
               onEdit: () => _showInventoryDialog(item: item),
               onDelete: () => _deleteItem(item['sku']),

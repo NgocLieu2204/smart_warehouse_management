@@ -242,6 +242,27 @@ def search_transactions_tool(args: str) -> str:
                                wh=params.get("wh"),
                                sku=params.get("sku"),
                                limit=int(params.get("limit", 10)))
+def inbound_tool_wrapper(args: str) -> str:
+    if not args.strip():
+        return "📥 Bạn muốn nhập kho cho sản phẩm nào? Hãy cung cấp: sku, qty, wh, by, note."
+    return inbound_tool(args)
+
+def outbound_tool_wrapper(args: str) -> str:
+    if not args.strip():
+        return "📤 Bạn muốn xuất kho cho sản phẩm nào? Hãy cung cấp: sku, qty, wh, by, note."
+    return outbound_tool(args)
+
+def rebuild_inventory_wrapper(args: str = "") -> str:
+    confirm = args.strip().lower()
+    if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
+        return "⚠️ Bạn có chắc muốn rebuild tồn kho toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
+    return rebuild_inventory()
+
+def rebuild_and_sync_inventory_wrapper(args: str = "") -> str:
+    confirm = args.strip().lower()
+    if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
+        return "⚠️ Bạn có chắc muốn đồng bộ inventory toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
+    return rebuild_and_sync_inventory()
 
 # ============================================================
 # Khởi tạo danh sách Tools
@@ -263,10 +284,21 @@ tools = [
          description="Cập nhật tồn kho toàn bộ từ transaction log."),
     Tool(name="MongoDBRebuildAndSyncInventory", func=rebuild_and_sync_inventory,
          description="Đồng bộ inventory toàn bộ từ transaction log."),
-     Tool(name="MongoDBStockCheckerWrapper", func=stock_tool,
-         description="Kiểm tra tồn kho hiện tại. Nếu người dùng chưa nhập SKU, hãy yêu cầu họ nhập SKU."),
+    # Wrapper Tools để hỏi lại khi user thiếu input
+    Tool(name="MongoDBStockCheckerWrapper", func=stock_tool,
+         description="Kiểm tra tồn kho. Nếu thiếu SKU thì hỏi lại."),
     Tool(name="MongoDBTransactionHistoryWrapper", func=transaction_history_tool,
-         description="Lấy lịch sử giao dịch của SKU. Nếu chưa có SKU thì hỏi lại."),
+         description="Xem lịch sử giao dịch. Nếu thiếu SKU thì hỏi lại."),
+    Tool(name="MongoDBSearchTransactionsWrapper", func=search_transactions_tool,
+         description="Tìm giao dịch. Nếu thiếu JSON filter thì hỏi lại."),
+    Tool(name="MongoDBInboundRecorderWrapper", func=inbound_tool_wrapper,
+         description="Ghi nhận nhập kho. Nếu thiếu tham số thì hỏi lại."),
+    Tool(name="MongoDBOutboundRecorderWrapper", func=outbound_tool_wrapper,
+         description="Ghi nhận xuất kho. Nếu thiếu tham số thì hỏi lại."),
+    Tool(name="MongoDBRebuildInventoryWrapper", func=rebuild_inventory_wrapper,
+         description="Rebuild tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
+    Tool(name="MongoDBRebuildAndSyncInventoryWrapper", func=rebuild_and_sync_inventory_wrapper,
+         description="Đồng bộ tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
 ]
 
 # ============================================================
@@ -278,7 +310,9 @@ agent = initialize_agent(
     tools,
     llm,
     agent="zero-shot-react-description",
-    verbose=True
+    verbose=True,
+    handle_parsing_errors=True,   # tránh crash
+    return_intermediate_steps=False
 )
 
 print("✅ Agent đã khởi tạo thành công")
