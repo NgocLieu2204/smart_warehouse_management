@@ -98,7 +98,7 @@ class _InventoryViewState extends State<InventoryView> {
                   decoration: const InputDecoration(labelText: "Vị trí chi tiết")),
               TextField(
                   controller: expCtrl,
-                  decoration: const InputDecoration(labelText: "Hạn sử dụng")),
+                  decoration: const InputDecoration(labelText: "Ngày sản xuất")),
               TextField(
                   controller: imageUrlCtrl,
                   decoration: const InputDecoration(labelText: "URL Hình ảnh")),
