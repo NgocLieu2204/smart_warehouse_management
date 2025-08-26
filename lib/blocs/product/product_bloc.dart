@@ -38,10 +38,11 @@ class ProductBloc extends Bloc<ProductEvent,ProductState> {
         quantity: event.product['quantity'],
         unit: event.product['unit'],
         barcode: event.product['barcode'],
-        expiryDate: DateTime.parse(event.product['expiryDate']),
+        exp: event.product['exp'], // 🔥 String nhập trực tiếp
         location: event.product['location'],
-        imageUrl: event.product['imageUrl'] ?? '', // Optional field
+        imageUrl: event.product['imageUrl'] ?? '',
       ));
+
       add(LoadProducts()); // Reload products after adding
     } catch (e) {
       emit(ProductError(e.toString()));
@@ -52,17 +53,17 @@ class ProductBloc extends Bloc<ProductEvent,ProductState> {
     emit(ProductLoading());
     try {
         await _productRepository.updateProduct(Product(
-        id: event.productId,
-        name: event.updatedData['name'],
-        description: event.updatedData['description'],
-        quantity: event.updatedData['quantity'],
-        unit: event.updatedData['unit'],
-        barcode: event.updatedData['barcode'],
-        expiryDate: DateTime.parse(event.updatedData['expiryDate']),
-        location: event.updatedData['location'],
-        imageUrl: event.updatedData['imageUrl'] ?? '', // Optional field
-      ));
-      add(LoadProducts()); // Reload products after updating
+          id: event.productId,
+          name: event.updatedData['name'],
+          description: event.updatedData['description'],
+          quantity: event.updatedData['quantity'],
+          unit: event.updatedData['unit'],
+          barcode: event.updatedData['barcode'],
+          exp: event.updatedData['exp'], // 🔥 String
+          location: event.updatedData['location'],
+          imageUrl: event.updatedData['imageUrl'] ?? '',
+        ));
+      add(LoadProducts()); 
     } catch (e) {
       emit(ProductError(e.toString())); 
     }

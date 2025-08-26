@@ -25,9 +25,9 @@ const InventoryController = {
         }
     },
     async createInventory(req, res) {
-        const { sku, name, qty, uom, wh, location, exp } = req.body;
+        const { sku, name, qty, uom, wh, location, imageUrl, exp } = req.body;
         try {
-            const newInventory = new inventory({ sku, name, qty, uom, wh, location, exp });
+            const newInventory = new inventory({ sku, name, qty, uom, wh, location, imageUrl, exp });
             await newInventory.save();
             res.status(201).json(newInventory);
         } catch (error) {
@@ -36,11 +36,11 @@ const InventoryController = {
     },
     async updateInventory(req, res) {
         const { sku } = req.params;
-        const { name, qty, uom, wh, location, exp } = req.body;
+        const { name, qty, uom, wh, location, imageUrl, exp } = req.body;
         try {
             const updatedInventory = await inventory.findOneAndUpdate(
                 { sku },
-                { name, qty, uom, wh, location, exp },
+                { name, qty, uom, wh, location, imageUrl, exp },
                 { new: true }
             );
             if (!updatedInventory) {

@@ -11,7 +11,7 @@ class Product extends Equatable {
   final int quantity;
   final String unit;
   final String barcode;
-  final DateTime expiryDate;
+  final String exp; // 🔥 đổi từ DateTime expiryDate -> String exp
   final String location;
   final String imageUrl;
 
@@ -22,15 +22,17 @@ class Product extends Equatable {
     required this.quantity,
     required this.unit,
     required this.barcode,
-    required this.expiryDate,
+    required this.exp, // 🔥
     required this.location,
     required this.imageUrl,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
+  factory Product.fromJson(Map<String, dynamic> json) =>
+      _$ProductFromJson(json);
 
   Map<String, dynamic> toJson() => _$ProductToJson(this);
 
   @override
-  List<Object?> get props => [id, name, description, quantity, unit, barcode, expiryDate, location, imageUrl];
+  List<Object?> get props =>
+      [id, name, description, quantity, unit, barcode, exp, location, imageUrl];
 }

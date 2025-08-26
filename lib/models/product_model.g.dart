@@ -13,7 +13,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
       quantity: (json['quantity'] as num).toInt(),
       unit: json['unit'] as String,
       barcode: json['barcode'] as String,
-      expiryDate: DateTime.parse(json['expiryDate'] as String),
+      exp: json['exp'] as String,
       location: json['location'] as String,
       imageUrl: json['imageUrl'] as String,
     );
@@ -25,7 +25,7 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
       'quantity': instance.quantity,
       'unit': instance.unit,
       'barcode': instance.barcode,
-      'expiryDate': instance.expiryDate.toIso8601String(),
+      'exp': instance.exp,
       'location': instance.location,
       'imageUrl': instance.imageUrl,
     };

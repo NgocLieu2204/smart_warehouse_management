@@ -17,8 +17,6 @@ class _InventoryViewState extends State<InventoryView> {
   bool _loading = true;
   String? _error;
 
-  // Sử dụng IP của máy thật nếu chạy trên thiết bị thật,
-  // hoặc 10.0.2.2 cho Android emulator.
   final String baseUrl = "http://10.0.2.2:5000/api/inventory";
 
   @override
@@ -35,7 +33,6 @@ class _InventoryViewState extends State<InventoryView> {
     try {
       final response = await http.get(Uri.parse('$baseUrl/getInventory'));
       if (response.statusCode == 200) {
-        // Decode an toàn hơn với utf8
         final data = json.decode(utf8.decode(response.bodyBytes));
         setState(() {
           _inventoryList = data;
@@ -44,7 +41,8 @@ class _InventoryViewState extends State<InventoryView> {
         });
       } else {
         setState(() {
-          _error = 'Failed to load inventory data. Status code: ${response.statusCode}';
+          _error =
+              'Failed to load inventory data. Status code: ${response.statusCode}';
         });
       }
     } catch (e) {
@@ -52,9 +50,9 @@ class _InventoryViewState extends State<InventoryView> {
         _error = "Error connecting to server: ${e.toString()}";
       });
     } finally {
-        setState(() {
-          _loading = false;
-        });
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
@@ -62,8 +60,13 @@ class _InventoryViewState extends State<InventoryView> {
     final nameCtrl = TextEditingController(text: item?['name'] ?? '');
     final skuCtrl = TextEditingController(text: item?['sku'] ?? '');
     final qtyCtrl = TextEditingController(text: '${item?['qty'] ?? ''}');
+    final uomCtrl = TextEditingController(text: item?['uom'] ?? '');
     final whCtrl = TextEditingController(text: item?['wh'] ?? '');
-    final imageUrlCtrl = TextEditingController(text: item?['imageUrl'] ?? ''); // Thêm controller cho imageUrl
+    final locCtrl = TextEditingController(text: item?['location'] ?? '');
+    final expCtrl = TextEditingController(text: item?['exp'] ?? '');
+    final imageUrlCtrl =
+        TextEditingController(text: item?['imageUrl'] ?? '');
+
     final isUpdate = item != null;
 
     await showDialog(
@@ -74,16 +77,37 @@ class _InventoryViewState extends State<InventoryView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Tên sản phẩm")),
-              TextField(controller: skuCtrl, decoration: const InputDecoration(labelText: "SKU")),
-              TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "Số lượng"), keyboardType: TextInputType.number),
-              TextField(controller: whCtrl, decoration: const InputDecoration(labelText: "Vị trí kho")),
-              TextField(controller: imageUrlCtrl, decoration: const InputDecoration(labelText: "URL Hình ảnh")), // Thêm TextField cho imageUrl
+              TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: "Tên sản phẩm")),
+              TextField(
+                  controller: skuCtrl,
+                  decoration: const InputDecoration(labelText: "SKU")),
+              TextField(
+                  controller: qtyCtrl,
+                  decoration: const InputDecoration(labelText: "Số lượng"),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: uomCtrl,
+                  decoration: const InputDecoration(labelText: "Đơn vị (uom)")),
+              TextField(
+                  controller: whCtrl,
+                  decoration: const InputDecoration(labelText: "Kho")),
+              TextField(
+                  controller: locCtrl,
+                  decoration: const InputDecoration(labelText: "Vị trí chi tiết")),
+              TextField(
+                  controller: expCtrl,
+                  decoration: const InputDecoration(labelText: "Hạn sử dụng")),
+              TextField(
+                  controller: imageUrlCtrl,
+                  decoration: const InputDecoration(labelText: "URL Hình ảnh")),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
           ElevatedButton(
             child: Text(isUpdate ? "Cập nhật" : "Thêm"),
             onPressed: () async {
@@ -91,8 +115,11 @@ class _InventoryViewState extends State<InventoryView> {
                 "name": nameCtrl.text,
                 "sku": skuCtrl.text,
                 "qty": int.tryParse(qtyCtrl.text) ?? 0,
+                "uom": uomCtrl.text,
                 "wh": whCtrl.text,
-                "imageUrl": imageUrlCtrl.text, // Thêm imageUrl vào body
+                "location": locCtrl.text,
+                "exp": expCtrl.text,
+                "imageUrl": imageUrlCtrl.text,
               };
 
               final uri = isUpdate
@@ -100,15 +127,18 @@ class _InventoryViewState extends State<InventoryView> {
                   : Uri.parse('$baseUrl/createInventory');
 
               final resp = isUpdate
-                  ? await http.put(uri, headers: {"Content-Type": "application/json"}, body: json.encode(body))
-                  : await http.post(uri, headers: {"Content-Type": "application/json"}, body: json.encode(body));
+                  ? await http.put(uri,
+                      headers: {"Content-Type": "application/json"},
+                      body: json.encode(body))
+                  : await http.post(uri,
+                      headers: {"Content-Type": "application/json"},
+                      body: json.encode(body));
 
               if (mounted) {
                 if (resp.statusCode == 200 || resp.statusCode == 201) {
                   Navigator.pop(context);
                   fetchInventoryData();
                 } else {
-                  // Hiển thị lỗi nếu có
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Lỗi: ${resp.body}'),
                     backgroundColor: Colors.red,
@@ -148,14 +178,14 @@ class _InventoryViewState extends State<InventoryView> {
     if (_loading) {
       body = const Center(child: CircularProgressIndicator());
     } else if (_error != null) {
-      body = Center(child: Padding(
+      body = Center(
+          child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Text("Lỗi: $_error", textAlign: TextAlign.center),
       ));
     } else if (_inventoryList.isEmpty) {
-        body = const Center(child: Text("Không có sản phẩm nào trong kho."));
-    }
-    else {
+      body = const Center(child: Text("Không có sản phẩm nào trong kho."));
+    } else {
       body = RefreshIndicator(
         onRefresh: fetchInventoryData,
         child: ListView.separated(
@@ -169,9 +199,11 @@ class _InventoryViewState extends State<InventoryView> {
               name: item['name'] ?? 'Không có tên',
               sku: item['sku'] ?? 'N/A',
               quantity: item['qty'] ?? 0,
-              location: item['wh'] ?? 'N/A',
-              status: item['status'] ?? "Còn hàng",
-              imageUrl: item['imageUrl'], // **TRUYỀN URL ẢNH VÀO WIDGET**
+              uom: item['uom'] ?? "EA",   // ✅ thêm uom
+              wh: item['wh'] ?? 'N/A',    // ✅ thêm wh
+              location: item['location'] ?? 'N/A',
+              exp: item['exp'] ?? "N/A",  // ✅ thêm exp
+              imageUrl: item['imageUrl'],
               onEdit: () => _showInventoryDialog(item: item),
               onDelete: () => _deleteItem(item['sku']),
             );
@@ -179,15 +211,24 @@ class _InventoryViewState extends State<InventoryView> {
         ),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Hàng tồn kho",
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         actions: [
-          IconButton(onPressed: _expandAll, icon: const Icon(Icons.unfold_more), tooltip: 'Mở rộng tất cả'),
-          IconButton(onPressed: _collapseAll, icon: const Icon(Icons.unfold_less), tooltip: 'Thu gọn tất cả'),
-          IconButton(onPressed: () => _showInventoryDialog(), icon: const Icon(Icons.add), tooltip: 'Thêm sản phẩm'),
+          IconButton(
+              onPressed: _expandAll,
+              icon: const Icon(Icons.unfold_more),
+              tooltip: 'Mở rộng tất cả'),
+          IconButton(
+              onPressed: _collapseAll,
+              icon: const Icon(Icons.unfold_less),
+              tooltip: 'Thu gọn tất cả'),
+          IconButton(
+              onPressed: () => _showInventoryDialog(),
+              icon: const Icon(Icons.add),
+              tooltip: 'Thêm sản phẩm'),
         ],
       ),
       body: body,

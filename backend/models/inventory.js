@@ -7,8 +7,9 @@ const InventorySchema = new mongoose.Schema({
   qty: { type: Number, required: true, default: 0 },
   uom: { type: String, required: true },   // đơn vị: EA, BOX...
   wh: { type: String, required: true },    // mã warehouse
-  location: { type: String },              // vị trí kệ
-  exp: { type: Date }                      // hạn dùng
+  location: { type: String  },    
+  imageUrl: { type: String , required: false ,trim:true }, // URL hình ảnh sản phẩm
+  exp: { type: String }                      // hạn dùng
 }, { timestamps: true });
 
 module.exports = mongoose.model("inventory", InventorySchema);

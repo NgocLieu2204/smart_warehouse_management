@@ -21,31 +21,40 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
 
   // Hàm gửi API
-  Future<void> _sendMessageToAPI(String text) async {
-    try {
-      final response = await http.post(
-        Uri.parse("http://10.0.2.2:8000/ask"), // gửi đến ai_agent
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"query": text}),
-      );
+  // Hàm gửi API
+Future<void> _sendMessageToAPI(String text) async {
+  try {
+    final response = await http.post(
+      Uri.parse("http://10.0.2.2:8000/ask"), // gửi đến ai_agent
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"query": text}),
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final reply = data["response"] ?? "Bot không có phản hồi";
-        setState(() {
-          _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
-        });
-      } else {
-        setState(() {
-          _messages.insert(0, ChatMessage(text: "Lỗi server (${response.statusCode})", isSentByMe: false));
-        });
-      }
-    } catch (e) {
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      // Nếu không có key response thì fallback
+      final reply = (data["response"] != null && data["response"].toString().trim().isNotEmpty)
+          ? data["response"]
+          : "🤖 Bot không tìm thấy câu trả lời";
+
       setState(() {
-        _messages.insert(0, ChatMessage(text: "Lỗi kết nối: $e", isSentByMe: false));
+        _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
+      });
+    } else {
+      // Trường hợp lỗi server
+      setState(() {
+        _messages.insert(0, ChatMessage(text: "🤖 Lỗi server", isSentByMe: false));
       });
     }
+  } catch (e) {
+    // Trường hợp lỗi kết nối hoặc exception khác
+    setState(() {
+      _messages.insert(0, ChatMessage(text: "🤖 Lỗi kết nối", isSentByMe: false));
+    });
   }
+}
+
 
 
   void _handleSubmitted(String text) {
