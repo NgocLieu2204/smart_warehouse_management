@@ -159,6 +159,7 @@ def transaction_history_tool(args: str) -> str:
         return "📜 Bạn muốn xem lịch sử giao dịch của sản phẩm nào? Hãy nhập mã SKU."
     return get_transaction_history(sku)
 
+<<<<<<< Updated upstream
 def inbound_tool_wrapper(args: str) -> str:
     if not args.strip():
         return "📥 Bạn muốn nhập kho cho sản phẩm nào? Format: sku,qty,wh,by,note"
@@ -174,11 +175,46 @@ def complete_task_wrapper(args: str) -> str:
     if not task_id:
         return "📝 Bạn muốn hoàn thành task nào? Hãy nhập task_id."
     return complete_task(task_id)
+=======
+def search_transactions_tool(args: str) -> str:
+    if not args.strip():
+        return " Bạn muốn tìm giao dịch theo SKU nào hoặc tiêu chí nào? Hãy cung cấp JSON filter."
+    try:
+        params = json.loads(args)
+    except Exception as e:
+        return f" Lỗi parse input: {e}"
+    return search_transactions(by=params.get("by"),
+                               wh=params.get("wh"),
+                               sku=params.get("sku"),
+                               limit=int(params.get("limit", 10)))
+# def inbound_tool_wrapper(args: str) -> str:
+#     if not args.strip():
+#         return "📥 Bạn muốn nhập kho cho sản phẩm nào? Hãy cung cấp: sku, qty, wh, by, note."
+#     return inbound_tool(args)
+
+# def outbound_tool_wrapper(args: str) -> str:
+#     if not args.strip():
+#         return "📤 Bạn muốn xuất kho cho sản phẩm nào? Hãy cung cấp: sku, qty, wh, by, note."
+#     return outbound_tool(args)
+
+# def rebuild_inventory_wrapper(args: str = "") -> str:
+#     confirm = args.strip().lower()
+#     if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
+#         return "⚠️ Bạn có chắc muốn rebuild tồn kho toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
+#     return rebuild_inventory()
+
+# def rebuild_and_sync_inventory_wrapper(args: str = "") -> str:
+#     confirm = args.strip().lower()
+#     if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
+#         return "⚠️ Bạn có chắc muốn đồng bộ inventory toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
+#     return rebuild_and_sync_inventory()
+>>>>>>> Stashed changes
 
 # ============================================================
 # Khởi tạo Tools
 # ============================================================
 tools = [
+<<<<<<< Updated upstream
     # Inventories
     Tool(name="MongoDBStockBySKU", func=get_stock_by_sku, description="Kiểm tra tồn kho theo SKU."),
     Tool(name="MongoDBStockByName", func=get_stock_by_name, description="Kiểm tra tồn kho theo tên."),
@@ -197,6 +233,39 @@ tools = [
     Tool(name="MongoDBTaskAssigner", func=assign_task, description="Gán người thực hiện cho task."),
     Tool(name="MongoDBTaskCompleterWrapper", func=complete_task_wrapper, description="Đánh dấu task hoàn thành, nếu thiếu task_id thì hỏi lại."),
     Tool(name="MongoDBTaskSearcher", func=search_tasks, description="Tìm kiếm task theo tiêu chí."),
+=======
+    Tool(name="MongoDBStockChecker", func=get_stock_by_sku,
+         description="Tính tồn kho hiện tại theo SKU (tự động cập nhật vào collection inventories)."),
+    Tool(name="MongoDBStockByName", func=get_stock_by_name,
+         description="Tính tồn kho hiện tại theo tên (tự động cập nhật vào collection inventories)."),
+    Tool(name="MongoDBTransactionHistory", func=get_transaction_history,
+         description="Lấy lịch sử giao dịch của SKU."),
+    Tool(name="MongoDBInboundRecorder", func=inbound_tool,
+         description="Ghi nhận giao dịch nhập kho (tự cập nhật tồn kho)."),
+    Tool(name="MongoDBOutboundRecorder", func=outbound_tool,
+         description="Ghi nhận giao dịch xuất kho (tự cập nhật tồn kho)."),
+    Tool(name="MongoDBTransactionSearcher", func=search_transactions_tool,
+         description="Tìm kiếm transactions theo tiêu chí JSON."),
+    Tool(name="MongoDBRebuildInventory", func=rebuild_inventory,
+         description="Cập nhật tồn kho toàn bộ từ transaction log."),
+    Tool(name="MongoDBRebuildAndSyncInventory", func=rebuild_and_sync_inventory,
+         description="Đồng bộ inventory toàn bộ từ transaction log."),
+    # Wrapper Tools để hỏi lại khi user thiếu input
+    Tool(name="MongoDBStockCheckerWrapper", func=stock_tool,
+         description="Kiểm tra tồn kho. Nếu thiếu SKU thì hỏi lại."),
+    Tool(name="MongoDBTransactionHistoryWrapper", func=transaction_history_tool,
+         description="Xem lịch sử giao dịch. Nếu thiếu SKU thì hỏi lại."),
+    Tool(name="MongoDBSearchTransactionsWrapper", func=search_transactions_tool,
+         description="Tìm giao dịch. Nếu thiếu JSON filter thì hỏi lại."),
+    # Tool(name="MongoDBInboundRecorderWrapper", func=inbound_tool_wrapper,
+    #      description="Ghi nhận nhập kho. Nếu thiếu tham số thì hỏi lại."),
+    # Tool(name="MongoDBOutboundRecorderWrapper", func=outbound_tool_wrapper,
+    #      description="Ghi nhận xuất kho. Nếu thiếu tham số thì hỏi lại."),
+    # Tool(name="MongoDBRebuildInventoryWrapper", func=rebuild_inventory_wrapper,
+    #      description="Rebuild tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
+    # Tool(name="MongoDBRebuildAndSyncInventoryWrapper", func=rebuild_and_sync_inventory_wrapper,
+    #      description="Đồng bộ tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
+>>>>>>> Stashed changes
 ]
 
 # ============================================================
@@ -209,8 +278,13 @@ agent = initialize_agent(
     llm,
     agent="zero-shot-react-description",
     verbose=True,
+<<<<<<< Updated upstream
     handle_parsing_errors=True,
     return_intermediate_steps=False
+=======
+    # handle_parsing_errors=True,   # tránh crash
+    # return_intermediate_steps=False
+>>>>>>> Stashed changes
 )
 
 print("✅ Agent đã khởi tạo thành công")
