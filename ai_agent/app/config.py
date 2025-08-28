@@ -19,7 +19,7 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://levancu976:levancu%40123@clust
 # Tên database
 MONGO_DB = os.getenv("MONGO_DB", "smart_warehouse_management")
 
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3-70b-8192")
 # ============================================================
 # Kiểm tra để đảm bảo key được load
 # ============================================================

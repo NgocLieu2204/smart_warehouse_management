@@ -159,7 +159,6 @@ def transaction_history_tool(args: str) -> str:
         return "📜 Bạn muốn xem lịch sử giao dịch của sản phẩm nào? Hãy nhập mã SKU."
     return get_transaction_history(sku)
 
-<<<<<<< Updated upstream
 def inbound_tool_wrapper(args: str) -> str:
     if not args.strip():
         return "📥 Bạn muốn nhập kho cho sản phẩm nào? Format: sku,qty,wh,by,note"
@@ -175,98 +174,76 @@ def complete_task_wrapper(args: str) -> str:
     if not task_id:
         return "📝 Bạn muốn hoàn thành task nào? Hãy nhập task_id."
     return complete_task(task_id)
-=======
-def search_transactions_tool(args: str) -> str:
-    if not args.strip():
-        return " Bạn muốn tìm giao dịch theo SKU nào hoặc tiêu chí nào? Hãy cung cấp JSON filter."
-    try:
-        params = json.loads(args)
-    except Exception as e:
-        return f" Lỗi parse input: {e}"
-    return search_transactions(by=params.get("by"),
-                               wh=params.get("wh"),
-                               sku=params.get("sku"),
-                               limit=int(params.get("limit", 10)))
-# def inbound_tool_wrapper(args: str) -> str:
-#     if not args.strip():
-#         return "📥 Bạn muốn nhập kho cho sản phẩm nào? Hãy cung cấp: sku, qty, wh, by, note."
-#     return inbound_tool(args)
-
-# def outbound_tool_wrapper(args: str) -> str:
-#     if not args.strip():
-#         return "📤 Bạn muốn xuất kho cho sản phẩm nào? Hãy cung cấp: sku, qty, wh, by, note."
-#     return outbound_tool(args)
-
-# def rebuild_inventory_wrapper(args: str = "") -> str:
-#     confirm = args.strip().lower()
-#     if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
-#         return "⚠️ Bạn có chắc muốn rebuild tồn kho toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
-#     return rebuild_inventory()
-
-# def rebuild_and_sync_inventory_wrapper(args: str = "") -> str:
-#     confirm = args.strip().lower()
-#     if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
-#         return "⚠️ Bạn có chắc muốn đồng bộ inventory toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
-#     return rebuild_and_sync_inventory()
->>>>>>> Stashed changes
 
 # ============================================================
 # Khởi tạo Tools
 # ============================================================
 tools = [
-<<<<<<< Updated upstream
     # Inventories
-    Tool(name="MongoDBStockBySKU", func=get_stock_by_sku, description="Kiểm tra tồn kho theo SKU."),
-    Tool(name="MongoDBStockByName", func=get_stock_by_name, description="Kiểm tra tồn kho theo tên."),
-    Tool(name="MongoDBInventorySearcher", func=search_inventories, description="Tìm kiếm sản phẩm trong inventories."),
-    Tool(name="MongoDBStockCheckerWrapper", func=stock_tool, description="Kiểm tra tồn kho, nếu thiếu SKU thì hỏi lại."),
+    Tool(
+        name="MongoDBStockBySKU",
+        func=get_stock_by_sku,
+        description="Dùng khi người dùng cung cấp rõ mã SKU. Trả về tồn kho hiện tại của SKU đó từ MongoDB."
+    ),
+    Tool(
+        name="MongoDBStockByName",
+        func=get_stock_by_name,
+        description="Dùng khi người dùng chỉ nhớ hoặc nhập tên sản phẩm. Tìm SKU theo tên, sau đó trả về tồn kho."
+    ),
+    Tool(
+        name="MongoDBInventorySearcher",
+        func=search_inventories,
+        description="Tìm kiếm nhiều sản phẩm trong kho. Input phải là JSON, có thể gồm: "
+                    '{"sku": "...", "name": "...", "wh": "...", "limit": N}. '
+                    "Trả về danh sách SKU, tên, số lượng tồn và kho lưu trữ."
+    ),
+    Tool(
+        name="MongoDBStockCheckerWrapper",
+        func=stock_tool,
+        description="Dùng khi người dùng hỏi chung chung về tồn kho nhưng chưa nhập SKU. "
+                    "Tool sẽ hỏi lại user để lấy SKU."
+    ),
     
     # Transactions
-    Tool(name="MongoDBTransactionHistory", func=get_transaction_history, description="Xem lịch sử giao dịch của SKU."),
-    Tool(name="MongoDBTransactionHistoryWrapper", func=transaction_history_tool, description="Xem lịch sử giao dịch, nếu thiếu SKU thì hỏi lại."),
-    Tool(name="MongoDBInboundRecorderWrapper", func=inbound_tool_wrapper, description="Ghi nhận inbound, nếu thiếu tham số thì hỏi lại."),
-    Tool(name="MongoDBOutboundRecorderWrapper", func=outbound_tool_wrapper, description="Ghi nhận outbound, nếu thiếu tham số thì hỏi lại."),
-    Tool(name="MongoDBTransactionSearcher", func=search_transactions, description="Tìm kiếm giao dịch theo tiêu chí JSON."),
+    Tool(
+        name="MongoDBTransactionHistory",
+        func=get_transaction_history,
+        description="Dùng khi user nhập SKU và muốn xem lịch sử giao dịch gần đây. "
+                    "Trả về danh sách inbound/outbound của SKU."
+    ),
+    Tool(
+        name="MongoDBTransactionHistoryWrapper",
+        func=transaction_history_tool,
+        description="Dùng khi user muốn xem lịch sử giao dịch nhưng chưa nhập SKU. "
+                    "Tool sẽ hỏi lại user để bổ sung SKU."
+    ),
+    Tool(
+        name="MongoDBInboundRecorderWrapper",
+        func=inbound_tool_wrapper,
+        description="Dùng để ghi nhận giao dịch nhập kho (inbound). Input format: sku,qty,wh,by,note. "
+                    "Nếu thiếu tham số sẽ hỏi lại user."
+    ),
+    Tool(
+        name="MongoDBOutboundRecorderWrapper",
+        func=outbound_tool_wrapper,
+        description="Dùng để ghi nhận giao dịch xuất kho (outbound). Input format: sku,qty,wh,by,note. "
+                    "Nếu thiếu tham số sẽ hỏi lại user."
+    ),
+    Tool(
+        name="MongoDBTransactionSearcher",
+        func=search_transactions,
+        description="Dùng khi cần lọc nhiều giao dịch. Input là JSON có thể gồm: "
+                    '{"sku": "...", "wh": "...", "by": "...", "limit": N}. '
+                    "Trả về danh sách giao dịch phù hợp."
+    ),
 
     # Tasks
     Tool(name="MongoDBOpenTasks", func=get_open_tasks, description="Danh sách task đang mở."),
     Tool(name="MongoDBTaskAssigner", func=assign_task, description="Gán người thực hiện cho task."),
     Tool(name="MongoDBTaskCompleterWrapper", func=complete_task_wrapper, description="Đánh dấu task hoàn thành, nếu thiếu task_id thì hỏi lại."),
     Tool(name="MongoDBTaskSearcher", func=search_tasks, description="Tìm kiếm task theo tiêu chí."),
-=======
-    Tool(name="MongoDBStockChecker", func=get_stock_by_sku,
-         description="Tính tồn kho hiện tại theo SKU (tự động cập nhật vào collection inventories)."),
-    Tool(name="MongoDBStockByName", func=get_stock_by_name,
-         description="Tính tồn kho hiện tại theo tên (tự động cập nhật vào collection inventories)."),
-    Tool(name="MongoDBTransactionHistory", func=get_transaction_history,
-         description="Lấy lịch sử giao dịch của SKU."),
-    Tool(name="MongoDBInboundRecorder", func=inbound_tool,
-         description="Ghi nhận giao dịch nhập kho (tự cập nhật tồn kho)."),
-    Tool(name="MongoDBOutboundRecorder", func=outbound_tool,
-         description="Ghi nhận giao dịch xuất kho (tự cập nhật tồn kho)."),
-    Tool(name="MongoDBTransactionSearcher", func=search_transactions_tool,
-         description="Tìm kiếm transactions theo tiêu chí JSON."),
-    Tool(name="MongoDBRebuildInventory", func=rebuild_inventory,
-         description="Cập nhật tồn kho toàn bộ từ transaction log."),
-    Tool(name="MongoDBRebuildAndSyncInventory", func=rebuild_and_sync_inventory,
-         description="Đồng bộ inventory toàn bộ từ transaction log."),
-    # Wrapper Tools để hỏi lại khi user thiếu input
-    Tool(name="MongoDBStockCheckerWrapper", func=stock_tool,
-         description="Kiểm tra tồn kho. Nếu thiếu SKU thì hỏi lại."),
-    Tool(name="MongoDBTransactionHistoryWrapper", func=transaction_history_tool,
-         description="Xem lịch sử giao dịch. Nếu thiếu SKU thì hỏi lại."),
-    Tool(name="MongoDBSearchTransactionsWrapper", func=search_transactions_tool,
-         description="Tìm giao dịch. Nếu thiếu JSON filter thì hỏi lại."),
-    # Tool(name="MongoDBInboundRecorderWrapper", func=inbound_tool_wrapper,
-    #      description="Ghi nhận nhập kho. Nếu thiếu tham số thì hỏi lại."),
-    # Tool(name="MongoDBOutboundRecorderWrapper", func=outbound_tool_wrapper,
-    #      description="Ghi nhận xuất kho. Nếu thiếu tham số thì hỏi lại."),
-    # Tool(name="MongoDBRebuildInventoryWrapper", func=rebuild_inventory_wrapper,
-    #      description="Rebuild tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
-    # Tool(name="MongoDBRebuildAndSyncInventoryWrapper", func=rebuild_and_sync_inventory_wrapper,
-    #      description="Đồng bộ tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
->>>>>>> Stashed changes
 ]
+
 
 # ============================================================
 # Khởi tạo LLM & Agent
@@ -276,15 +253,16 @@ llm = ChatGroq(model=GROQ_MODEL, groq_api_key=GROQ_API_KEY, temperature=0)
 agent = initialize_agent(
     tools,
     llm,
-    agent="zero-shot-react-description",
+    agent="chat-zero-shot-react-description",
     verbose=True,
-<<<<<<< Updated upstream
     handle_parsing_errors=True,
-    return_intermediate_steps=False
-=======
-    # handle_parsing_errors=True,   # tránh crash
-    # return_intermediate_steps=False
->>>>>>> Stashed changes
+    return_intermediate_steps=False,
+    agent_kwargs={
+        "prefix": "Bạn là trợ lý quản lý kho. Luôn dùng tool MongoDB để trả lời. "
+                  "Không bịa ra thông tin. Nếu thiếu dữ liệu, hãy hỏi lại user."
+    }
 )
+
+
 
 print("✅ Agent đã khởi tạo thành công")

@@ -19,54 +19,62 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _messages = [];
+  bool _isLoading = false;
 
   // Hàm gửi API
-   Future<void> _sendMessageToAPI(String text) async {
-      try {
-        final response = await http.post(
-          Uri.parse("http://10.0.2.2:8000/ask"),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"query": text}),
-        );
+  Future<void> _sendMessageToAPI(String text) async {
+    setState(() {
+      _isLoading = true; // ✅ Bắt đầu loading
+    });
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
+    try {
+      final response = await http.post(
+        Uri.parse("http://10.0.2.2:8000/ask"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"query": text}),
+      );
 
-          // Nếu bot yêu cầu thêm thông tin
-          if (data["need_more_info"] == true) {
-            setState(() {
-              _messages.insert(
-                0,
-                ChatMessage(
-                  text: "🤖 Tôi cần thêm thông tin để trả lời.\n👉 ${data["suggestions"]?.join("\n👉 ") ?? "Vui lòng nhập chi tiết hơn."}",
-                  isSentByMe: false,
-                ),
-              );
-            });
-            return;
-          }
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-          // Trả lời bình thường
-          final reply = (data["response"] != null && data["response"].toString().trim().isNotEmpty)
+        if (data["need_more_info"] == true) {
+          setState(() {
+            _messages.insert(
+              0,
+              ChatMessage(
+                text:
+                    "🤖 Tôi cần thêm thông tin để trả lời.\n👉 ${data["suggestions"]?.join("\n👉 ") ?? "Vui lòng nhập chi tiết hơn."}",
+                isSentByMe: false,
+              ),
+            );
+          });
+        } else {
+          final reply = (data["response"] != null &&
+                  data["response"].toString().trim().isNotEmpty)
               ? data["response"]
               : "🤖 Bot không tìm thấy câu trả lời.\n👉 Vui lòng nhập câu hỏi khác.";
 
           setState(() {
             _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
           });
-        } else {
-          setState(() {
-            _messages.insert(0, ChatMessage(text: "🤖 Lỗi server", isSentByMe: false));
-          });
         }
-      } catch (e) {
+      } else {
         setState(() {
-          _messages.insert(0, ChatMessage(text: "🤖 Lỗi kết nối", isSentByMe: false));
+          _messages.insert(
+              0, ChatMessage(text: "🤖 Lỗi server", isSentByMe: false));
         });
       }
+    } catch (e) {
+      setState(() {
+        _messages.insert(
+            0, ChatMessage(text: "🤖 Lỗi kết nối", isSentByMe: false));
+      });
+    } finally {
+      setState(() {
+        _isLoading = false; // ✅ Kết thúc loading
+      });
     }
-
-
+  }
 
   void _handleSubmitted(String text) {
     if (text.trim().isEmpty) return;
@@ -76,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: text, isSentByMe: true));
     });
 
-    // Gửi API sau khi gửi tin nhắn
+    // Gửi API
     _sendMessageToAPI(text);
   }
 
@@ -99,9 +107,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 : ListView.builder(
                     padding: const EdgeInsets.all(16.0),
                     reverse: true,
-                    itemCount: _messages.length,
+                    // ➕ nếu đang loading thì thêm 1 item
+                    itemCount: _messages.length + (_isLoading ? 1 : 0),
                     itemBuilder: (_, int index) {
-                      final message = _messages[index];
+                      // Nếu loading thì item đầu tiên là spinner
+                      if (_isLoading && index == 0) {
+                        return _buildLoadingBubble();
+                      }
+
+                      final message = _messages[_isLoading ? index - 1 : index];
                       return _buildMessageBubble(message, themeColor);
                     },
                   ),
@@ -117,7 +131,8 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.chat_bubble_outline, size: 60, color: Colors.black26),
+          const Icon(Icons.chat_bubble_outline,
+              size: 60, color: Colors.black26),
           const SizedBox(height: 16),
           const Text(
             'Tôi có thể giúp gì cho bạn?',
@@ -204,6 +219,33 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Bubble loading (spinner)
+  Widget _buildLoadingBubble() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 5.0),
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Text("Đang trả lời..."),
+          ],
+        ),
       ),
     );
   }
