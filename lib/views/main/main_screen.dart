@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/main/custom_bottom_nav_bar.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../inventory/inventory_screen.dart';
-import '../orders/orders_screen.dart';
+import '../tasks/tasks_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../widgets/floating_chatbox.dart'; // Import widget chatbox
 
@@ -21,7 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   static final List<Widget> _widgetOptions = <Widget>[
     DashboardView(),
     InventoryView(),
-    OrdersView(),
+    TasksView(),
     SettingsView(),
   ];
 

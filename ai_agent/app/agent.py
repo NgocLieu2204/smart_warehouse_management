@@ -1,5 +1,6 @@
 from datetime import datetime
-from langchain.agents import initialize_agent, Tool
+from langchain.agents import initialize_agent
+from langchain.tools import StructuredTool
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
@@ -42,8 +43,7 @@ def get_stock_by_sku(sku: str) -> str:
         item = inventories.find_one({"sku": sku})
         uom = item.get("uom", "sản phẩm") if item else "sản phẩm"
         return f"📦 SKU {sku} hiện còn {new_qty} {uom} trong kho."
-    else:
-        return f"❌ Không tìm thấy SKU {sku} trong transaction log."
+    return f"❌ Không tìm thấy SKU {sku} trong transaction log."
 
 def get_stock_by_name(name: str) -> str:
     item = inventories.find_one({"name": name})
@@ -145,105 +145,43 @@ def search_tasks(args: str) -> str:
     return "\n".join(items) if items else "❌ Không tìm thấy task nào."
 
 # ============================================================
-# WRAPPER (Hỏi lại khi thiếu input)
+# Structured Tools cho inbound/outbound
 # ============================================================
-def stock_tool(args: str) -> str:
-    sku = args.strip()
-    if not sku:
-        return "📦 Bạn muốn kiểm tra tồn kho của sản phẩm nào? Hãy nhập mã SKU."
-    return get_stock_by_sku(sku)
+inbound_tool = StructuredTool.from_function(
+    add_inbound_transaction,
+    name="MongoDBInboundRecorder",
+    description="Ghi nhận giao dịch nhập kho. Nhập: sku, qty, wh, by, note"
+)
 
-def transaction_history_tool(args: str) -> str:
-    sku = args.strip()
-    if not sku:
-        return "📜 Bạn muốn xem lịch sử giao dịch của sản phẩm nào? Hãy nhập mã SKU."
-    return get_transaction_history(sku)
-
-def inbound_tool_wrapper(args: str) -> str:
-    if not args.strip():
-        return "📥 Bạn muốn nhập kho cho sản phẩm nào? Format: sku,qty,wh,by,note"
-    return add_inbound_transaction(*[p.strip() for p in args.split(",")[:4]])
-
-def outbound_tool_wrapper(args: str) -> str:
-    if not args.strip():
-        return "📤 Bạn muốn xuất kho cho sản phẩm nào? Format: sku,qty,wh,by,note"
-    return add_outbound_transaction(*[p.strip() for p in args.split(",")[:4]])
-
-def complete_task_wrapper(args: str) -> str:
-    task_id = args.strip()
-    if not task_id:
-        return "📝 Bạn muốn hoàn thành task nào? Hãy nhập task_id."
-    return complete_task(task_id)
+outbound_tool = StructuredTool.from_function(
+    add_outbound_transaction,
+    name="MongoDBOutboundRecorder",
+    description="Ghi nhận giao dịch xuất kho. Nhập: sku, qty, wh, by, note"
+)
 
 # ============================================================
-# Khởi tạo Tools
+# Các tool khác (vẫn dùng Tool + wrappers string)
 # ============================================================
+from langchain.agents import Tool as SimpleTool
+
 tools = [
     # Inventories
-    Tool(
-        name="MongoDBStockBySKU",
-        func=get_stock_by_sku,
-        description="Dùng khi người dùng cung cấp rõ mã SKU. Trả về tồn kho hiện tại của SKU đó từ MongoDB."
-    ),
-    Tool(
-        name="MongoDBStockByName",
-        func=get_stock_by_name,
-        description="Dùng khi người dùng chỉ nhớ hoặc nhập tên sản phẩm. Tìm SKU theo tên, sau đó trả về tồn kho."
-    ),
-    Tool(
-        name="MongoDBInventorySearcher",
-        func=search_inventories,
-        description="Tìm kiếm nhiều sản phẩm trong kho. Input phải là JSON, có thể gồm: "
-                    '{"sku": "...", "name": "...", "wh": "...", "limit": N}. '
-                    "Trả về danh sách SKU, tên, số lượng tồn và kho lưu trữ."
-    ),
-    Tool(
-        name="MongoDBStockCheckerWrapper",
-        func=stock_tool,
-        description="Dùng khi người dùng hỏi chung chung về tồn kho nhưng chưa nhập SKU. "
-                    "Tool sẽ hỏi lại user để lấy SKU."
-    ),
-    
+    SimpleTool(name="MongoDBStockBySKU", func=get_stock_by_sku, description="Trả về tồn kho hiện tại của SKU."),
+    SimpleTool(name="MongoDBStockByName", func=get_stock_by_name, description="Tìm SKU theo tên, sau đó trả về tồn kho."),
+    SimpleTool(name="MongoDBInventorySearcher", func=search_inventories, description="Tìm kiếm nhiều sản phẩm trong kho. Input là JSON."),
+
     # Transactions
-    Tool(
-        name="MongoDBTransactionHistory",
-        func=get_transaction_history,
-        description="Dùng khi user nhập SKU và muốn xem lịch sử giao dịch gần đây. "
-                    "Trả về danh sách inbound/outbound của SKU."
-    ),
-    Tool(
-        name="MongoDBTransactionHistoryWrapper",
-        func=transaction_history_tool,
-        description="Dùng khi user muốn xem lịch sử giao dịch nhưng chưa nhập SKU. "
-                    "Tool sẽ hỏi lại user để bổ sung SKU."
-    ),
-    Tool(
-        name="MongoDBInboundRecorderWrapper",
-        func=inbound_tool_wrapper,
-        description="Dùng để ghi nhận giao dịch nhập kho (inbound). Input format: sku,qty,wh,by,note. "
-                    "Nếu thiếu tham số sẽ hỏi lại user."
-    ),
-    Tool(
-        name="MongoDBOutboundRecorderWrapper",
-        func=outbound_tool_wrapper,
-        description="Dùng để ghi nhận giao dịch xuất kho (outbound). Input format: sku,qty,wh,by,note. "
-                    "Nếu thiếu tham số sẽ hỏi lại user."
-    ),
-    Tool(
-        name="MongoDBTransactionSearcher",
-        func=search_transactions,
-        description="Dùng khi cần lọc nhiều giao dịch. Input là JSON có thể gồm: "
-                    '{"sku": "...", "wh": "...", "by": "...", "limit": N}. '
-                    "Trả về danh sách giao dịch phù hợp."
-    ),
+    SimpleTool(name="MongoDBTransactionHistory", func=get_transaction_history, description="Xem lịch sử giao dịch theo SKU."),
+    inbound_tool,
+    outbound_tool,
+    SimpleTool(name="MongoDBTransactionSearcher", func=search_transactions, description="Tìm giao dịch theo tiêu chí. Input là JSON."),
 
     # Tasks
-    Tool(name="MongoDBOpenTasks", func=get_open_tasks, description="Danh sách task đang mở."),
-    Tool(name="MongoDBTaskAssigner", func=assign_task, description="Gán người thực hiện cho task."),
-    Tool(name="MongoDBTaskCompleterWrapper", func=complete_task_wrapper, description="Đánh dấu task hoàn thành, nếu thiếu task_id thì hỏi lại."),
-    Tool(name="MongoDBTaskSearcher", func=search_tasks, description="Tìm kiếm task theo tiêu chí."),
+    SimpleTool(name="MongoDBOpenTasks", func=get_open_tasks, description="Danh sách task đang mở."),
+    SimpleTool(name="MongoDBTaskAssigner", func=assign_task, description="Gán người thực hiện cho task."),
+    SimpleTool(name="MongoDBTaskCompleterWrapper", func=complete_task, description="Đánh dấu task hoàn thành."),
+    SimpleTool(name="MongoDBTaskSearcher", func=search_tasks, description="Tìm kiếm task theo tiêu chí. Input là JSON."),
 ]
-
 
 # ============================================================
 # Khởi tạo LLM & Agent
@@ -262,7 +200,5 @@ agent = initialize_agent(
                   "Không bịa ra thông tin. Nếu thiếu dữ liệu, hãy hỏi lại user."
     }
 )
-
-
 
 print("✅ Agent đã khởi tạo thành công")

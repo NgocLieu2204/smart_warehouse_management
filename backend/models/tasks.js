@@ -1,17 +1,52 @@
-// models/Task.js
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const TaskSchema = new mongoose.Schema({
-  type: { type: String, enum: ["cycle_count", "putaway", "pick"], required: true },
-  status: { type: String, enum: ["open", "done"], default: "open" },
-  priority: { type: String, enum: ["low", "normal", "high"], default: "normal" },
-  payload: {
-    sku: { type: String, required: true },
-    wh: { type: String, required: true }
+// Schema con cho trường "payload"
+const payloadSchema = new mongoose.Schema({
+  sku: {
+    type: String,
+    required: true
   },
-  created_at: { type: Date, default: Date.now },
-  due_at: { type: Date },
-  assignee: { type: String }   // ai được giao task
-}, { timestamps: true });
+  wh: {
+    type: String,
+    required: true
+  }
+}, { _id: false }); // _id: false để không tạo _id cho sub-document
 
-module.exports = mongoose.model("Task", TaskSchema);
+const taskSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    required: true,
+    enum: ['putaway', 'cycle_count', 'pick']
+  },
+  status: {
+    type: String,
+    required: true,
+    enum: ['open', 'done']
+  },
+  priority: {
+    type: String,
+    required: true,
+    enum: ['low', 'normal', 'high']
+  },
+  payload: {
+    type: payloadSchema,
+    required: true
+  },
+  due_at: {
+    type: Date,
+    default: null
+  },
+  assignee: {
+    type: String,
+    default: null
+  }
+}, {
+  // Tự động thêm `createdAt` và `updatedAt`
+  // Tuy nhiên, dữ liệu của bạn có `created_at`, nên chúng ta sẽ dùng timestamps: true
+  // và Mongoose sẽ tự quản lý.
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+const Task = mongoose.model('Task', taskSchema);
+
+module.exports = Task;

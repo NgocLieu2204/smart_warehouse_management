@@ -27,8 +27,8 @@ class CustomBottomNavBar extends StatelessWidget {
           label: 'Inventory',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_cart_outlined),
-          label: 'Orders',
+          icon: Icon(Icons.task_alt_outlined),
+          label: 'Tasks',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings_outlined),
