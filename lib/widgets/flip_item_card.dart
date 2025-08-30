@@ -9,6 +9,7 @@ class FlipItemCard extends StatefulWidget {
   final int quantity;
   final List<String> details;
   final bool isExport;
+  final String? imageUrl;
 
   const FlipItemCard({
     Key? key,
@@ -17,6 +18,7 @@ class FlipItemCard extends StatefulWidget {
     required this.quantity,
     required this.details,
     required this.isExport,
+    this.imageUrl,
   }) : super(key: key);
 
   @override
@@ -98,6 +100,60 @@ class _FlipItemCardState extends State<FlipItemCard>
   }
 
   List<Widget> _buildFront() {
+    // START: Image Widget Logic
+    Widget imageWidget;
+    if (widget.imageUrl != null && widget.imageUrl!.trim().isNotEmpty) {
+      imageWidget = Container(
+        height: 120,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          // **** THAY ĐỔI Ở ĐÂY: Chuyển màu nền thành trắng ****
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.0),
+          child: Image.network(
+            widget.imageUrl!,
+            height: 120,
+            width: double.infinity,
+            fit: BoxFit.contain, // Giữ nguyên để thấy toàn bộ ảnh
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(
+                child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      imageWidget = Container(
+        height: 120,
+        decoration: BoxDecoration(
+          // **** THAY ĐỔI Ở ĐÂY: Chuyển màu nền thành trắng ****
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          // Thêm một đường viền nhẹ để khung không "biến mất" hoàn toàn
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        child: const Center(
+          child: Icon(Icons.image_outlined, color: Colors.grey, size: 40),
+        ),
+      );
+    }
+    // END: Image Widget Logic
+
     return [
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -112,18 +168,7 @@ class _FlipItemCardState extends State<FlipItemCard>
         ],
       ),
       const SizedBox(height: 12),
-      Container(
-        height: 120,
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white.withOpacity(0.1)
-              : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(
-          child: Text('Ảnh hàng (lazy)', style: TextStyle(color: Colors.grey)),
-        ),
-      ),
+      imageWidget,
       const SizedBox(height: 8),
       Text('SKU: ${widget.sku} • SL: ${widget.quantity}',
           style: TextStyle(color: Colors.grey.shade500)),

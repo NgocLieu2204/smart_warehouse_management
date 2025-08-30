@@ -1,14 +1,62 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 import '../../widgets/metric_card.dart';
 import '../../widgets/chart_card.dart';
 import '../../widgets/flip_item_card.dart';
 import '../../widgets/qr_scanner_dialog.dart';
 
-
-class DashboardView extends StatelessWidget {
+class DashboardView extends StatefulWidget {
   const DashboardView({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<DashboardView> {
+  List<dynamic> _inventoryList = [];
+  bool _loading = true;
+  String? _error;
+
+  final String baseUrl = "http://10.0.2.2:5000/api/inventory";
+
+  @override
+  void initState() {
+    super.initState();
+    fetchInventoryData();
+  }
+
+  Future<void> fetchInventoryData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/getInventory'));
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        setState(() {
+          _inventoryList = data;
+        });
+      } else {
+        setState(() {
+          _error =
+              'Failed to load inventory data. Status code: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = "Error connecting to server: ${e.toString()}";
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
 
   void _showQRScannerDialog(BuildContext context) {
     showDialog(
@@ -52,7 +100,7 @@ class DashboardView extends StatelessWidget {
           TextButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.person),
-            label: const Text('User'),
+            label: const Text('Admin'),
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: Theme.of(context).primaryColor,
@@ -97,11 +145,10 @@ class DashboardView extends StatelessWidget {
                         Text(
                           'Dữ liệu cập nhật giả lập mỗi 3 giây',
                           style: TextStyle(
-                            fontSize: 13,
+                              fontSize: 13,
                               color: isDark
                                   ? Colors.grey.shade300
-                                  : Colors.grey.shade600
-                          ),
+                                  : Colors.grey.shade600),
                         ),
                       ],
                     ),
@@ -110,12 +157,14 @@ class DashboardView extends StatelessWidget {
                       icon: const Icon(Icons.qr_code_scanner, size: 16),
                       label: const Text(
                         'Scan me',
-                        style: TextStyle(fontSize: 12), 
+                        style: TextStyle(fontSize: 12),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.secondary,
-                        minimumSize: const Size(30, 30), 
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondary,
+                        minimumSize: const Size(30, 30),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         foregroundColor: Colors.black,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -155,35 +204,33 @@ class DashboardView extends StatelessWidget {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                FlipItemCard(
-                  title: 'Pallet A12',
-                  sku: 'SW-1029',
-                  quantity: 320,
-                  details: [
-                    'Vị trí: Kệ B - Tầng 2',
-                    'HSD: 12/2025',
-                    'Trạng thái: Tốt',
-                  ],
-                  isExport: true,
-                ),
-                SizedBox(height: 16),
-                FlipItemCard(
-                  title: 'Crate Z55',
-                  sku: 'SW-5540',
-                  quantity: 58,
-                  details: [
-                    'Vị trí: Kệ D - Tầng 1',
-                    'HSD: 05/2026',
-                    'Trạng thái: Cần kiểm tra',
-                  ],
-                  isExport: false,
-                ),
-              ],
-            ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(child: Text(_error!))
+                    : Column(
+                        children:
+                            List.generate(_inventoryList.take(2).length, (index) {
+                          final item = _inventoryList[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom:16.0),
+                            child: FlipItemCard(
+                              title: item['name'] ?? 'Không có tên',
+                              sku: item['sku'] ?? 'N/A',
+                              quantity: item['qty'] ?? 0,
+                              imageUrl: item['imageUrl'], // <-- THÊM DÒNG NÀY
+                              details: [
+                                'Vị trí: ${item['location'] ?? 'N/A'}',
+                                'HSD: ${item['exp'] ?? 'N/A'}',
+                                'Trạng thái: Tốt',
+                              ],
+                              isExport: index.isEven,
+                            ),
+                          );
+                        }),
+                      ),
           ),
         ],
       ),
