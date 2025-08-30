@@ -13,6 +13,7 @@ class ProductBloc extends Bloc<ProductEvent,ProductState> {
     on<AddProduct>(_onAddProduct);
     on<UpdateProduct>(_onUpdateProduct);
     on<DeleteProduct>(_onDeleteProduct);
+    on<LoadTotalProducts>(_onLoadTotalProducts);
   }
   
   
@@ -44,6 +45,7 @@ class ProductBloc extends Bloc<ProductEvent,ProductState> {
       ));
 
       add(LoadProducts()); // Reload products after adding
+      add(LoadTotalProducts());
     } catch (e) {
       emit(ProductError(e.toString()));
     }
@@ -64,6 +66,7 @@ class ProductBloc extends Bloc<ProductEvent,ProductState> {
           imageUrl: event.updatedData['imageUrl'] ?? '',
         ));
       add(LoadProducts()); 
+      add(LoadTotalProducts());
     } catch (e) {
       emit(ProductError(e.toString())); 
     }
@@ -74,8 +77,19 @@ class ProductBloc extends Bloc<ProductEvent,ProductState> {
     try {
       await _productRepository.deleteProduct(event.productId);
       add(LoadProducts()); // Reload products after deletion
+      add(LoadTotalProducts());
     } catch (e) {
       emit(ProductError(e.toString()));
     }
   } 
+  Future<void> _onLoadTotalProducts(
+    LoadTotalProducts event, Emitter<ProductState> emit) async {
+  try {
+    final total = await _productRepository.getTotalQuantity();
+    emit(TotalProductsLoaded(total));
+  } catch (e) {
+    emit(ProductError(e.toString()));
+  }
+  
+}
 }

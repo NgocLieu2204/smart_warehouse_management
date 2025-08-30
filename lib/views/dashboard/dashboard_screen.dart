@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -57,7 +56,36 @@ class _DashboardViewState extends State<DashboardView> {
       });
     }
   }
+  Future<int> fetchLowQuantityCount() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/getLowQuanlityItems'));
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return data; 
+      } else {
+        throw Exception(
+            'Failed to load low quantity items. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error connecting to server: ${e.toString()}');
+    }
+  }
 
+  Future<int> fetchTotalQuantity() async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/getAllQuantityInventory'));
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return data['totalQuantity'] ?? 0;
+      } else {
+        throw Exception(
+            'Failed to load total quantity. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error connecting to server: ${e.toString()}');
+    }
+  }
   void _showQRScannerDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -71,7 +99,7 @@ class _DashboardViewState extends State<DashboardView> {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final formatter = NumberFormat("#,###", "en_US");
-
+    
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 0,
@@ -177,24 +205,65 @@ class _DashboardViewState extends State<DashboardView> {
                 Row(
                   children: [
                     Expanded(
-                      child: MetricCard(
-                        title: 'Tồn kho',
-                        value: formatter.format(12450),
-                        change: '+2.1% hôm nay',
-                        isLive: true,
-                        liveColor: Theme.of(context).primaryColor,
+                      child: FutureBuilder<int>(
+                        future: fetchTotalQuantity(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return MetricCard(
+                              title: 'Tồn kho',
+                              value: 'Lỗi',
+                              change: snapshot.error.toString(),
+                              isLive: false,
+                              liveColor: Colors.red,
+                            );
+                          } else {
+                            final total = snapshot.data ?? 0;
+                            return MetricCard(
+                              title: 'Tồn kho',
+                              value: formatter.format(total),
+                              change: '+2.1% hôm nay',
+                              isLive: true,
+                              liveColor: Theme.of(context).primaryColor,
+                            );
+                          }
+                        },
                       ),
                     ),
+
                     const SizedBox(width: 16),
-                    const Expanded(
-                      child: MetricCard(
-                        title: 'Cảnh báo',
-                        value: '3',
-                        change: 'Ưu tiên cao',
-                        isLive: false,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
-                        ),
+                    Expanded(
+                      child: FutureBuilder<int>(
+                        future: fetchLowQuantityCount(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return MetricCard(
+                              title: 'Cảnh báo',
+                              value: 'Lỗi',
+                              change: snapshot.error.toString(),
+                              isLive: false,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
+                              ),
+                            );
+                          } else {
+                            final lowStock = snapshot.data ?? 0;
+                            return 
+                            
+                            MetricCard(
+                              title: 'Cảnh báo',
+                              value: lowStock.toString(),
+                              change: lowStock > 0 ? 'Sản phẩm dưới 10 EA' : 'Ổn định',
+                              isLive: false,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ),
                   ],

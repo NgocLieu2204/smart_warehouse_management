@@ -320,7 +320,7 @@ tools = [
     #Xuất kho
     Tool(
        name="MongoDBInboundRecorder",
-       func=inbound_tool_wrapper,
+       func=outbound_tool_wrapper,
        description="Ghi nhận xuất kho (hỗ trợ CSV, JSON hoặc tiếng Việt)."
     ),
     Tool(name="MongoDBTransactionSearcher", func=search_transactions_tool,

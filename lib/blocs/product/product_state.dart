@@ -29,3 +29,11 @@ class ProductError extends ProductState {
   @override
   List<Object> get props => [message];
 }
+class TotalProductsLoaded extends ProductState {
+  final int total;
+
+  const TotalProductsLoaded(this.total);
+
+  @override
+  List<Object> get props => [total];
+}

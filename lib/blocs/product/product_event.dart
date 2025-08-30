@@ -36,3 +36,5 @@ class DeleteProduct extends ProductEvent {
   @override
   List<Object?> get props => [productId];
 }
+
+class LoadTotalProducts extends ProductEvent {} 

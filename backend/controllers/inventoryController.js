@@ -62,7 +62,31 @@ const InventoryController = {
         } catch (error) {
             res.status(500).json({ message: "Error deleting inventory item", error });
         }
+    },
+    async getAllQuanlityInventory(req, res) {
+        try {
+            const totalQuantity = await inventory.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalQty: { $sum: "$qty" }
+                    }
+                }
+            ]);
+            console.log("Aggregate result:", totalQuantity);
+            res.status(200).json({ totalQuantity: totalQuantity[0]?.totalQty || 0 });
+        } catch (error) {
+            res.status(500).json({ message: "Error calculating total quantity", error });
+        }
+    },
+    async getLowQuanlityItems(req, res) {
+        try {
+            const lowQuantityItems = await inventory.countDocuments({ qty: { $lt: 10 } });    
+            res.status(200).json(lowQuantityItems);
+        } catch (error) {
+            res.status(500).json({ message: "Error fetching low quantity items", error });  
+        }
     }
-}
+};
 
 module.exports = InventoryController;
