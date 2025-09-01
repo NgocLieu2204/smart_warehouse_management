@@ -6,6 +6,8 @@ import os
 import json
 from .database import db
 from .config import GROQ_API_KEY, GROQ_MODEL
+import re
+from bson.objectid import ObjectId
 
 # ============================================================
 # Load biến môi trường
@@ -181,28 +183,73 @@ def outbound_tool_wrapper(args: str) -> str:
 # ============================================================
 # Tool 7: Tìm kiếm transactions
 # ============================================================
-def search_transactions(by: str = None, wh: str = None, sku: str = None, limit: int = 10) -> str:
-    query = {}
-    if by: query["by"] = by
-    if wh: query["wh"] = wh
-    if sku: query["sku"] = sku
-    cursor = transactions.find(query).sort("at", -1).limit(limit)
-    logs = []
-    for t in cursor:
-        logs.append(f"{t['at'].strftime('%Y-%m-%d %H:%M:%S')} - {t['sku']} - {t['type']} {t['qty']} "
-                    f"(by {t['by']}, wh: {t['wh']}, note: {t.get('note','')})")
-    return "\n".join(logs) if logs else "❌ Không tìm thấy giao dịch phù hợp."
+# ============================================================
+# Tool 7: Tìm kiếm transactions thật từ MongoDB
+# ============================================================
+def search_transactions(user: str = None, wh: str = None, sku: str = None, limit: int = 10):
+    q = {}
+    if user:
+        q["by"] = {"$regex": f"^{user}$", "$options": "i"}  # so khớp không phân biệt hoa/thường
+    if wh:
+        q["wh"] = wh
+    if sku:
+        q["sku"] = sku
 
-def search_transactions_tool(args: str) -> str:
-    try:
-        params = json.loads(args)
-    except Exception as e:
-        return f"❌ Lỗi parse input: {e}"
-    return search_transactions(by=params.get("by"),
-                               wh=params.get("wh"),
-                               sku=params.get("sku"),
-                               limit=int(params.get("limit", 10)))
+    cursor = transactions.find(q).sort("at", -1).limit(limit)
+    results = []
+    for tx in cursor:
+        results.append(
+            f"{tx['at'].strftime('%Y-%m-%d %H:%M:%S')} | {tx['type']} {tx['qty']} "
+            f"(SKU {tx['sku']}, Kho: {tx['wh']}, By: {tx['by']}, Note: {tx.get('note','')})"
+        )
 
+    return "\n".join(results) if results else "❌ Không tìm thấy giao dịch phù hợp."
+
+# ============================================================
+# Tool 10: Tìm kiếm sản phẩm trong inventories (có hình ảnh)
+# ============================================================
+def search_inventories(query: str = "", wh: str = None, sku: str = None, limit: int = 20) -> str:
+    q = {}
+    if wh:
+        q["wh"] = wh
+    if sku:
+        q["sku"] = sku
+    if query:
+        # Tìm kiếm theo tên gần đúng (case-insensitive)
+        q["name"] = {"$regex": query, "$options": "i"}
+
+    cursor = inventories.find(q).limit(limit)
+    results = []
+    for item in cursor:
+        line = (
+            f"📦 {item.get('name','(no name)')} (SKU: {item.get('sku')})\n"
+            f"   ➡ Số lượng: {item.get('qty',0)} {item.get('uom','EA')}\n"
+            f"   ➡ Kho: {item.get('wh','?')} - Vị trí: {item.get('location','?')}\n"
+        )
+        # Nếu có imageUrl thì hiển thị
+        if item.get("imageUrl"):
+            line += f"   🖼 Ảnh: {item['imageUrl']}\n"
+        results.append(line)
+
+    return "\n".join(results) if results else "❌ Không tìm thấy sản phẩm phù hợp."
+# ============================================================
+# Tool 11: Lấy danh sách task đang mở
+# ============================================================
+def get_open_tasks(recent: bool = False):
+    if recent:
+        return "📋 Danh sách task đang mở (gần đây)."
+    return "📋 Tất cả các task đang mở."
+# ============================================================
+# Tool 12: Tìm kiếm task theo SKU, kho, nhân viên
+# ============================================================
+def search_tasks(sku: str = None, warehouse: str = None, assignee: str = None):
+    if sku:
+        return f"📋 Các task liên quan tới SKU {sku}."
+    if warehouse:
+        return f"📋 Các task tại kho {warehouse}."
+    if assignee:
+        return f"📋 Các task được giao cho nhân viên {assignee}."
+    return "❓ Bạn muốn tìm task theo SKU, kho hay nhân viên?"
 # ============================================================
 # Tool 8: Rebuild inventory toàn bộ (update inventories)
 # ============================================================
@@ -276,16 +323,30 @@ def transaction_history_tool(args: str) -> str:
     return get_transaction_history(sku)
 
 def search_transactions_tool(args: str) -> str:
-    if not args.strip():
-        return " Bạn muốn tìm giao dịch theo SKU nào hoặc tiêu chí nào? Hãy cung cấp JSON filter."
     try:
-        params = json.loads(args)
+        args = args.strip()
+        if not args:
+            return "❓ Bạn muốn tìm giao dịch theo user hay theo kho+SKU?"
+
+        # 1. Tìm giao dịch theo user
+        match = re.search(r"(?i)giao dịch.*(?:do|bởi)\s+người dùng\s*(\w+)", args)
+        if not match:
+            match = re.search(r"(?i)giao dịch.*user\s+(\w+)", args)
+        if match:
+            user = match.group(1).strip()
+            return search_transactions(user=user)
+
+        # 2. Tìm giao dịch theo kho + SKU
+        match = re.search(r"(?i)giao dịch.*kho\s+(\w+).*sku\s+(\w+)", args)
+        if match:
+            wh = match.group(1).strip()
+            sku = match.group(2).strip()
+            return search_transactions(wh=wh, sku=sku)
+
+        return "❌ Không hiểu yêu cầu tìm giao dịch."
+
     except Exception as e:
-        return f" Lỗi parse input: {e}"
-    return search_transactions(by=params.get("by"),
-                               wh=params.get("wh"),
-                               sku=params.get("sku"),
-                               limit=int(params.get("limit", 10)))
+        return f"❌ Lỗi xử lý tìm kiếm giao dịch: {e}"
 def rebuild_inventory_wrapper(args: str = "") -> str:
     confirm = args.strip().lower()
     if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
@@ -297,6 +358,148 @@ def rebuild_and_sync_inventory_wrapper(args: str = "") -> str:
     if confirm not in ["yes", "y", "ok", "đồng ý", "xác nhận"]:
         return "⚠️ Bạn có chắc muốn đồng bộ inventory toàn bộ từ transaction log không? Trả lời 'yes' để tiếp tục."
     return rebuild_and_sync_inventory()
+def search_inventories_tool(args: str) -> str:
+    try:
+        args = args.strip()
+        if not args:
+            return "❓ Bạn muốn tìm sản phẩm theo tên, SKU hay kho nào?"
+
+        # Nếu input là JSON thì parse bình thường
+        if args.startswith("{"):
+            params = json.loads(args)
+            return search_inventories(
+                query=params.get("query"),
+                wh=params.get("wh"),
+                sku=params.get("sku"),
+                limit=int(params.get("limit", 20))
+            )
+
+        # ================================
+        # Regex tiếng Việt
+        # ================================
+
+        # 1. Tìm theo kho
+        match = re.search(r"(?i)(liệt kê|danh sách).*kho\s+(\w+)", args)
+        if match:
+            wh = match.group(2)
+            return search_inventories(wh=wh)
+
+        # 2. Tìm theo tên sản phẩm chứa ...
+        match = re.search(r"(?i)(có sản phẩm nào.*|tìm sản phẩm).*['\"]?([\w\s]+)['\"]?", args)
+        if match:
+            query = match.group(2).strip()
+            return search_inventories(query=query)
+
+        # 3. Tìm theo SKU (form: "mã MS001", "SKU SP123")
+        match = re.search(r"(?i)(mã|sku|sản phẩm)\s*([A-Za-z0-9\-]+)", args)
+        if match:
+            sku = match.group(2).strip()
+            return search_inventories(sku=sku, limit=1)
+
+        # 4. Tìm theo tên đầy đủ (form: "thông tin sản phẩm <tên>")
+        match = re.search(r"(?i)(thông tin|chi tiết|cho tôi biết).*(sản phẩm)\s+([\w\s]+)", args)
+        if match:
+            query = match.group(3).strip()
+            return search_inventories(query=query, limit=5)
+
+        return "❌ Không hiểu yêu cầu tìm kiếm sản phẩm."
+
+    except Exception as e:
+        return f"❌ Lỗi xử lý tìm kiếm sản phẩm: {e}"
+def search_transactions_tool(args: str) -> str:
+    try:
+        args = args.strip()
+        if not args:
+            return "❓ Bạn muốn tìm giao dịch theo user hay theo kho+SKU?"
+
+        # 1. Tìm giao dịch theo user
+        match = re.search(r"(?i)(giao dịch).*user\s+(\w+)", args)
+        if match:
+            user = match.group(2).strip()
+            return search_transactions(user=user)
+
+        # 2. Tìm giao dịch theo kho + SKU
+        match = re.search(r"(?i)(giao dịch).*kho\s+(\w+).*sku\s+(\w+)", args)
+        if match:
+            wh = match.group(2).strip()
+            sku = match.group(3).strip()
+            return search_transactions(wh=wh, sku=sku)
+
+        return "❌ Không hiểu yêu cầu tìm giao dịch."
+
+    except Exception as e:
+        return f"❌ Lỗi xử lý tìm kiếm giao dịch: {e}"
+def get_open_tasks(recent: bool = False):
+    try:
+        query = {"status": "open"}
+        cursor = tasks.find(query)
+
+        if recent:
+            cursor = cursor.sort("created_at", -1).limit(5)
+
+        docs = list(cursor)
+        if not docs:
+            return "✅ Không có task nào đang mở."
+
+        result = "📋 Danh sách task đang mở:\n"
+        for t in docs:
+            due = t.get("due_at")
+            if isinstance(due, datetime):
+                due_str = due.strftime("%d-%m-%Y %H:%M")
+            elif isinstance(due, str):
+                try:
+                    due_str = datetime.fromisoformat(due).strftime("%d-%m-%Y %H:%M")
+                except:
+                    due_str = due
+            else:
+                due_str = "N/A"
+
+            result += f"- {t.get('_id')}: {t.get('title','(no title)')} (Hạn: {due_str})\n"
+
+        return result
+    except Exception as e:
+        return f"❌ Lỗi khi lấy task: {e}"
+
+def search_tasks(sku: str = None, wh: str = None, assignee: str = None):
+    try:
+        query = {}
+        if sku:
+            query["sku"] = sku
+        if wh:
+            query["warehouse"] = wh  # chắc chắn key trùng với Mongo
+        if assignee:
+            query["assignee"] = assignee
+
+        print("👉 Query Mongo:", query)   # log query
+        docs = list(tasks.find(query))
+        print("👉 Docs found:", docs)     # log kết quả
+
+        if not docs:
+            return "🔎 Không tìm thấy task nào phù hợp."
+
+        result = "🔎 Kết quả tìm kiếm task:\n"
+        for t in docs:
+            result += f"- {t.get('_id')}: {t.get('title','(no title)')} | Trạng thái: {t.get('status','N/A')}\n"
+
+        return result
+    except Exception as e:
+        return f"❌ Lỗi khi tìm task: {e}"
+
+def get_task_by_id(task_id: str):
+    task = tasks.find_one({"_id": ObjectId(task_id)})
+    if not task:
+        return f"❌ Không tìm thấy task với id {task_id}"
+
+    return (
+        f"📝 Task ID: {task_id}\n"
+        f"📌 Tiêu đề: {task.get('title', 'Không có')}\n"
+        f"👤 Người phụ trách: {task.get('assignee', 'Không có')}\n"
+        f"🏷️ SKU: {task.get('sku', 'Không có')}\n"
+        f"📦 Warehouse: {task.get('warehouse', 'Không có')}\n"
+        f"⚡ Trạng thái: {task.get('status', 'Không rõ')}\n"
+        f"⏰ Ngày tạo: {task.get('created_at', 'Không có')}\n"
+    )
+
 
 # ============================================================
 # Khởi tạo danh sách Tools
@@ -319,7 +522,7 @@ tools = [
     ),
     #Xuất kho
     Tool(
-       name="MongoDBInboundRecorder",
+       name="MongoDBOutboundRecorder",
        func=outbound_tool_wrapper,
        description="Ghi nhận xuất kho (hỗ trợ CSV, JSON hoặc tiếng Việt)."
     ),
@@ -344,7 +547,71 @@ tools = [
          description="Rebuild tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
     Tool(name="MongoDBRebuildAndSyncInventoryWrapper", func=rebuild_and_sync_inventory_wrapper,
          description="Đồng bộ tồn kho. Nếu user chưa xác nhận thì hỏi lại."),
+    # Tìm kiếm sản phẩm trong inventories
+    Tool(
+        name="SearchProductTool",
+        func=search_inventories_tool,
+        description="Tìm kiếm thông tin sản phẩm theo tên, SKU hoặc kho. "
+                    "Ví dụ: 'Cho tôi biết thông tin sản phẩm MS001' hoặc "
+                    "'Cho tôi biết thông tin sản phẩm điện thoại thông minh' hoặc "
+                    "'Liệt kê sản phẩm trong kho WH01'."
+    ),
+    # Tìm kiếm giao dịch theo user hoặc kho+SKU
+    Tool(
+            name="SearchTransactionsTool",
+            func=search_transactions_tool,
+            description=(
+                "Tìm kiếm giao dịch theo user hoặc theo kho + SKU. "
+                "Ví dụ: 'Tìm tất cả giao dịch do user An thực hiện.' hoặc "
+                "'Liệt kê giao dịch tại kho WH01 của SKU LT001.'"
+            )
+    ),
+    Tool(
+        name="GetOpenTasksTool",
+        func=get_open_tasks,
+        description=(
+            "Trả về danh sách các task đang mở hoặc task mở gần đây. "
+            "Ví dụ: 'Có những task nào đang mở?' hoặc "
+            "'Danh sách task open gần đây.'"
+        )
+    ),
+    Tool(
+        name="SearchTasksTool",
+        func=lambda query: search_tasks(
+            sku=extract_sku(query),
+            wh=extract_wh(query),
+            assignee=extract_assignee(query)
+        ),
+        description="Tìm task theo SKU, warehouse hoặc assignee."
+    ),
+    Tool(
+        name="GetTaskByIdTool",
+        func=get_task_by_id,
+        description="Trả về thông tin chi tiết của một task theo id."
+    )
+
 ]
+
+# ============================================================
+# Helper functions to extract sku, warehouse, assignee from query string
+# ============================================================
+def extract_sku(query: str):
+    match = re.search(r"(sku|mã)\s*([A-Za-z0-9\-]+)", query, re.IGNORECASE)
+    if match:
+        return match.group(2).strip()
+    return None
+
+def extract_wh(query: str):
+    match = re.search(r"(kho)\s*([A-Za-z0-9\-]+)", query, re.IGNORECASE)
+    if match:
+        return match.group(2).strip()
+    return None
+
+def extract_assignee(query: str):
+    match = re.search(r"(assignee|nhân viên|user)\s*([A-Za-z0-9\-]+)", query, re.IGNORECASE)
+    if match:
+        return match.group(2).strip()
+    return None
 
 # ============================================================
 # Khởi tạo LLM & Agent

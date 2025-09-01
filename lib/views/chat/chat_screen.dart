@@ -5,8 +5,13 @@ import 'dart:convert';
 class ChatMessage {
   final String text;
   final bool isSentByMe;
+  final bool isImage;
 
-  ChatMessage({required this.text, required this.isSentByMe});
+  ChatMessage({
+    required this.text,
+    required this.isSentByMe,
+    this.isImage = false,
+  });
 }
 
 class ChatScreen extends StatefulWidget {
@@ -24,7 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // Hàm gửi API
   Future<void> _sendMessageToAPI(String text) async {
     setState(() {
-      _isLoading = true; // ✅ Bắt đầu loading
+      _isLoading = true;
     });
 
     try {
@@ -54,9 +59,38 @@ class _ChatScreenState extends State<ChatScreen> {
               ? data["response"]
               : "🤖 Bot không tìm thấy câu trả lời.\n👉 Vui lòng nhập câu hỏi khác.";
 
-          setState(() {
-            _messages.insert(0, ChatMessage(text: reply, isSentByMe: false));
-          });
+          // ✅ Regex tìm link ảnh trong text
+          final RegExp imgRegex =
+              RegExp(r'(https?:\/\/[^\s]+\.(?:png|jpg|jpeg))');
+          final matches = imgRegex.allMatches(reply);
+
+          if (matches.isNotEmpty) {
+            String replacedText = reply;
+            for (var m in matches) {
+              final url = m.group(0)!;
+              // Thêm bubble text trước (nếu có nội dung ngoài link)
+              replacedText = replacedText.replaceAll(url, "").trim();
+              if (replacedText.isNotEmpty) {
+                _messages.insert(
+                  0,
+                  ChatMessage(text: replacedText, isSentByMe: false),
+                );
+              }
+              // Thêm bubble ảnh
+              _messages.insert(
+                0,
+                ChatMessage(text: url, isSentByMe: false, isImage: true),
+              );
+            }
+          } else {
+            // Không có ảnh, chỉ text
+            setState(() {
+              _messages.insert(
+                0,
+                ChatMessage(text: reply, isSentByMe: false),
+              );
+            });
+          }
         }
       } else {
         setState(() {
@@ -71,7 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } finally {
       setState(() {
-        _isLoading = false; // ✅ Kết thúc loading
+        _isLoading = false;
       });
     }
   }
@@ -84,7 +118,6 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: text, isSentByMe: true));
     });
 
-    // Gửi API
     _sendMessageToAPI(text);
   }
 
@@ -107,14 +140,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 : ListView.builder(
                     padding: const EdgeInsets.all(16.0),
                     reverse: true,
-                    // ➕ nếu đang loading thì thêm 1 item
                     itemCount: _messages.length + (_isLoading ? 1 : 0),
                     itemBuilder: (_, int index) {
-                      // Nếu loading thì item đầu tiên là spinner
                       if (_isLoading && index == 0) {
                         return _buildLoadingBubble();
                       }
-
                       final message = _messages[_isLoading ? index - 1 : index];
                       return _buildMessageBubble(message, themeColor);
                     },
@@ -168,14 +198,6 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       child: Row(
         children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.black54),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chức năng tạo ảnh (Demo).')),
-              );
-            },
-          ),
           Expanded(
             child: TextField(
               controller: _textController,
@@ -198,8 +220,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageBubble(ChatMessage message, Color themeColor) {
     final align =
         message.isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    final color = message.isSentByMe ? themeColor : Colors.grey[300];
-    final textColor = message.isSentByMe ? Colors.white : Colors.black;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5.0),
@@ -208,22 +228,38 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                EdgeInsets.symmetric(horizontal: message.isImage ? 0 : 14.0, vertical: 10.0),
             decoration: BoxDecoration(
-              color: color,
+              color: message.isSentByMe
+                  ? themeColor
+                  : (message.isImage ? Colors.transparent : Colors.grey[300]),
               borderRadius: BorderRadius.circular(20.0),
             ),
-            child: Text(
-              message.text,
-              style: TextStyle(color: textColor, fontSize: 16),
-            ),
+            child: message.isImage
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      message.text,
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Text("❌ Không tải được ảnh"),
+                    ),
+                  )
+                : Text(
+                    message.text,
+                    style: TextStyle(
+                        color:
+                            message.isSentByMe ? Colors.white : Colors.black,
+                        fontSize: 16),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  // Bubble loading (spinner)
   Widget _buildLoadingBubble() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5.0),
