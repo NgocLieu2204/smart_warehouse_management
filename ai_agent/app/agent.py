@@ -24,31 +24,13 @@ inventories = db["inventories"]
 # ============================================================
 # Tool 1: Tính tồn kho hiện tại theo SKU (và update inventories)
 # ============================================================
+
 def get_stock_by_sku(sku: str) -> str:
-    pipeline = [
-        {"$match": {"sku": sku}},
-        {"$group": {
-            "_id": "$sku",
-            "inbound": {"$sum": {"$cond": [{"$eq": ["$type", "inbound"]}, "$qty", 0]}},
-            "outbound": {"$sum": {"$cond": [{"$eq": ["$type", "outbound"]}, "$qty", 0]}}
-        }},
-        {"$project": {
-            "sku": "$_id",
-            "stock": {"$subtract": ["$inbound", "$outbound"]}
-        }}
-    ]
-    result = list(transactions.aggregate(pipeline))
-    if result:
-        new_qty = result[0]['stock']
-        inventories.update_one(
-            {"sku": sku},
-            {"$set": {"qty": new_qty, "updatedAt": datetime.utcnow()}}
-        )
-        item = inventories.find_one({"sku": sku})
-        uom = item.get("uom", "sản phẩm") if item else "sản phẩm"
-        return f"📦 SKU {sku} hiện còn {new_qty} {uom} trong kho."
+    inv = inventories.find_one({"sku": sku}, {"_id": 0, "sku": 1, "qty": 1})
+    if inv:
+        return f"📦 Tồn kho SKU {sku}: {inv['qty']} sản phẩm."
     else:
-        return f"❌ Không tìm thấy SKU {sku} trong transaction log."
+        return f"❌ Không tìm thấy tồn kho cho SKU {sku}."
 
 # ============================================================
 # Tool 1b: Tính tồn kho theo tên (và update inventories)
@@ -98,23 +80,59 @@ def get_transaction_history(sku: str, limit: int = 5) -> str:
 # ============================================================
 # Tool 3: Ghi nhận inbound (cập nhật inventories luôn)
 # ============================================================
+# ============================================================
+# Tool 3: Ghi nhận inbound (cập nhật inventories ngay)
+# ============================================================
 def add_inbound_transaction(sku: str, qty: int, wh: str, by: str, note: str = "") -> str:
-    doc = {"sku": sku, "type": "inbound", "qty": int(qty), "wh": wh,
-           "at": datetime.utcnow(), "by": by, "note": note}
+    doc = {
+        "sku": sku,
+        "type": "inbound",
+        "qty": int(qty),
+        "wh": wh,
+        "at": datetime.utcnow(),
+        "by": by,
+        "note": note
+    }
     transactions.insert_one(doc)
-    # Sau khi insert → cập nhật lại tồn kho
-    get_stock_by_sku(sku)
+
+    # Cập nhật trực tiếp inventory (cộng thêm qty)
+    inventories.update_one(
+        {"sku": sku},
+        {
+            "$inc": {"qty": int(qty)},
+            "$set": {"updatedAt": datetime.utcnow()}
+        },
+        upsert=True  # nếu chưa có thì tạo mới
+    )
+
     return f"✅ Đã ghi nhận nhập {qty} sản phẩm (SKU {sku}) vào kho {wh} bởi {by}."
 
+
 # ============================================================
-# Tool 4: Ghi nhận outbound (cập nhật inventories luôn)
+# Tool 4: Ghi nhận outbound (cập nhật inventories ngay)
 # ============================================================
 def add_outbound_transaction(sku: str, qty: int, wh: str, by: str, note: str = "") -> str:
-    doc = {"sku": sku, "type": "outbound", "qty": int(qty), "wh": wh,
-           "at": datetime.utcnow(), "by": by, "note": note}
+    doc = {
+        "sku": sku,
+        "type": "outbound",
+        "qty": int(qty),
+        "wh": wh,
+        "at": datetime.utcnow(),
+        "by": by,
+        "note": note
+    }
     transactions.insert_one(doc)
-    # Sau khi insert → cập nhật lại tồn kho
-    get_stock_by_sku(sku)
+
+    # Cập nhật trực tiếp inventory (trừ qty)
+    inventories.update_one(
+        {"sku": sku},
+        {
+            "$inc": {"qty": -int(qty)},
+            "$set": {"updatedAt": datetime.utcnow()}
+        },
+        upsert=True
+    )
+
     return f"✅ Đã ghi nhận xuất {qty} sản phẩm (SKU {sku}) từ kho {wh} bởi {by}."
 
 # ============================================================
