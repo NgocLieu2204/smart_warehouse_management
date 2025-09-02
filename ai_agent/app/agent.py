@@ -120,72 +120,97 @@ def add_outbound_transaction(sku: str, qty: int, wh: str, by: str, note: str = "
 # ============================================================
 # Tool 5 & 6: Wrapper inbound / outbound
 # ============================================================
-
-
 def inbound_tool_wrapper(args: str) -> str:
     try:
         # Nếu là JSON string
         if args.strip().startswith("{"):
             data = json.loads(args)
-            sku = data["sku"]
-            qty = int(data["qty"])
-            wh = data["wh"]
-            by = data["by"]
-            note = data.get("note", "")
-            return add_inbound_transaction(sku, qty, wh, by, note)
+        else:
+            # Nếu là tiếng Việt tự nhiên → regex parse (ưu tiên trước)
+            match = re.search(
+                r"Nhập kho\s+(\d+)\s+(?:cái|đơn vị|sản phẩm)?\s*SKU\s+(\w+)\s+(?:vào|tại)\s+kho\s+(\w+)\s+bởi\s+(\w+)(?:,\s*ghi chú\s*(.*))?",
+                args,
+                re.IGNORECASE,
+            )
+            if match:
+                qty, sku, wh, by, note = match.groups()
+                data = {
+                    "sku": sku,
+                    "quantity": int(qty),
+                    "warehouse": wh,
+                    "by": by,
+                    "note": note or ""
+                }
+            else:
+                # Nếu không khớp regex → thử CSV
+                parts = [p.strip() for p in args.split(",")]
+                if len(parts) >= 4:
+                    data = {
+                        "quantity": int(parts[0]),
+                        "sku": parts[1],
+                        "warehouse": parts[2],
+                        "by": parts[3],
+                        "note": parts[4] if len(parts) > 4 else ""
+                    }
+                else:
+                    return "❌ Không hiểu dữ liệu nhập kho."
 
-        # Nếu là CSV string
-        parts = [p.strip() for p in args.split(",")]
-        if len(parts) >= 4:
-            sku, qty, wh, by = parts[:4]
-            note = parts[4] if len(parts) > 4 else ""
-            return add_inbound_transaction(sku, int(qty), wh, by, note)
+        # Chuẩn hóa và lưu
+        return add_inbound_transaction(
+            data["sku"], int(data["quantity"]), data["warehouse"], data["by"], data.get("note", "")
+        )
 
-        # Nếu là tiếng Việt tự nhiên → regex parse
-        match = re.search(r"(Nhập kho\s+(\d+)\s+cái\s+SKU\s+(\w+)\s+vào\s+kho\s+(\w+)\s+bởi\s+(\w+)(?:,\s*ghi chú\s*(.*))?", args, re.IGNORECASE)
-        if match:
-            qty, sku, wh, by, note = match.groups()
-            return add_inbound_transaction(sku, int(qty), wh, by, note or "")
-
-        return "❌ Không hiểu dữ liệu nhập kho."
     except Exception as e:
         return f"❌ Lỗi xử lý inbound: {e}"
+
 
 def outbound_tool_wrapper(args: str) -> str:
     try:
         # Nếu là JSON string
         if args.strip().startswith("{"):
             data = json.loads(args)
-            sku = data["sku"]
-            qty = int(data["qty"])
-            wh = data["wh"]
-            by = data["by"]
-            note = data.get("note", "")
-            return add_inbound_transaction(sku, qty, wh, by, note)
+        else:
+            # Nếu là tiếng Việt tự nhiên → regex parse (ưu tiên trước)
+            match = re.search(
+                r"Xuất kho\s+(\d+)\s+(?:cái|đơn vị|sản phẩm)?\s*SKU\s+(\w+)\s+(?:ra|từ|tại)\s+kho\s+(\w+)\s+bởi\s+(?:nhân viên\s+)?(\w+)(?:,\s*ghi chú\s*(.*))?",
+                args,
+                re.IGNORECASE,
+            )
+            if match:
+                qty, sku, wh, by, note = match.groups()
+                data = {
+                    "sku": sku,
+                    "quantity": int(qty),
+                    "warehouse": wh,
+                    "by": by,
+                    "note": note or ""
+                }
+            else:
+                # Nếu không khớp regex → thử CSV
+                parts = [p.strip() for p in args.split(",")]
+                if len(parts) >= 4:
+                    data = {
+                        "quantity": int(parts[0]),
+                        "sku": parts[1],
+                        "warehouse": parts[2],
+                        "by": parts[3],
+                        "note": parts[4] if len(parts) > 4 else ""
+                    }
+                else:
+                    return "❌ Không hiểu dữ liệu xuất kho."
 
-        # Nếu là CSV string
-        parts = [p.strip() for p in args.split(",")]
-        if len(parts) >= 4:
-            sku, qty, wh, by = parts[:4]
-            note = parts[4] if len(parts) > 4 else ""
-            return add_outbound_transaction(sku, int(qty), wh, by, note)
+        # Chuẩn hóa và lưu
+        return add_outbound_transaction(
+            data["sku"], int(data["quantity"]), data["warehouse"], data["by"], data.get("note", "")
+        )
 
-        # Nếu là tiếng Việt tự nhiên → regex parse
-        match = re.search(r"(Xuất kho\s+(\d+)\s+cái\s+SKU\s+(\w+)\s+vào\s+kho\s+(\w+)\s+bởi\s+(\w+)(?:,\s*ghi chú\s*(.*))?", args, re.IGNORECASE)
-        if match:
-            qty, sku, wh, by, note = match.groups()
-            return add_outbound_transaction(sku, int(qty), wh, by, note or "")
-
-        return "❌ Không hiểu dữ liệu nhập kho."
     except Exception as e:
-        return f"❌ Lỗi xử lý inbound: {e}"
+        return f"❌ Lỗi xử lý outbound: {e}"
 
 # ============================================================
 # Tool 7: Tìm kiếm transactions
 # ============================================================
-# ============================================================
-# Tool 7: Tìm kiếm transactions thật từ MongoDB
-# ============================================================
+
 def search_transactions(user: str = None, wh: str = None, sku: str = None, limit: int = 10):
     q = {}
     if user:
