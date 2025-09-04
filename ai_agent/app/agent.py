@@ -77,9 +77,7 @@ def get_transaction_history(sku: str, limit: int = 5) -> str:
         )
     return "\n".join(logs) if logs else f"❌ Không có giao dịch nào cho {sku}."
 
-# ============================================================
-# Tool 3: Ghi nhận inbound (cập nhật inventories luôn)
-# ============================================================
+
 # ============================================================
 # Tool 3: Ghi nhận inbound (cập nhật inventories ngay)
 # ============================================================
@@ -542,6 +540,11 @@ def get_task_by_id(task_id: str):
         f"⚡ Trạng thái: {task.get('status', 'Không rõ')}\n"
         f"⏰ Ngày tạo: {task.get('created_at', 'Không có')}\n"
     )
+def out_of_scope_tool(query: str) -> str:
+    """Dùng khi câu hỏi không liên quan tới hệ thống quản lý kho"""
+    return "⚠️ Vui lòng đưa ra câu hỏi liên quan tới hệ thống."
+
+
 
 
 # ============================================================
@@ -631,7 +634,12 @@ tools = [
         name="GetTaskByIdTool",
         func=get_task_by_id,
         description="Trả về thông tin chi tiết của một task theo id."
-    )
+    ),
+    Tool(name="OutOfScopeTool", 
+        func=out_of_scope_tool,
+        description="Dùng khi câu hỏi không liên quan tới hệ thống quản lý kho."
+    ),
+   
 
 ]
 
@@ -656,6 +664,8 @@ def extract_assignee(query: str):
         return match.group(2).strip()
     return None
 
+
+
 # ============================================================
 # Khởi tạo LLM & Agent
 # ============================================================
@@ -668,6 +678,7 @@ agent = initialize_agent(
     verbose=True,
     handle_parsing_errors=True,   # tránh crash
     return_intermediate_steps=False
+   
 )
 
 

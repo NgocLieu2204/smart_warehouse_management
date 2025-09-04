@@ -73,18 +73,20 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 20),
                  Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: NeumorphicButton(
-                    onTap: () {
+                  child: ElevatedButton(
+                    child: Text('Đăng xuất'),
+                    onPressed: () {
                       context.read<AuthBloc>().add(LogoutRequested());
                     },
-                    child: const Center(
-                      child: Text(
-                        'Đăng xuất',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
+                      alignment: Alignment.center,
                     ),
                   ),
                 )

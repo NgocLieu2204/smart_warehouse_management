@@ -31,15 +31,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  void _simulateSearch() async {
-    _isChatboxLoading.value = true;
-    await Future.delayed(const Duration(seconds: 3));
-    _isChatboxLoading.value = false;
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tìm kiếm hoàn tất!')),
-    );
-  }
+  
 
   @override
   void dispose() {
@@ -57,13 +49,7 @@ class _MainScreenState extends State<MainScreen> {
             index: _selectedIndex,
             children: _widgetOptions,
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _simulateSearch,
-            // Đổi màu nền sang màu vàng
-            backgroundColor: Colors.amber, 
-            child: const Icon(Icons.search, color: Colors.black),
-            elevation: 4.0,
-          ),
+         
           // Bỏ 'floatingActionButtonLocation' để nút tự động về góc phải dưới
           bottomNavigationBar: CustomBottomNavBar(
             selectedIndex: _selectedIndex,
