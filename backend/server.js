@@ -3,7 +3,8 @@ const { connectDB } = require('./configs/db');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const inventoryRouter = require('./router/InventoryRouter');
-const taskRouter = require('./router/taskRouter'); // 1. Thêm import cho taskRouter
+const taskRouter = require('./router/taskRouter'); 
+const transactionRouter = require('./router/transactionRouter');
 
 dotenv.config();
 
@@ -12,7 +13,7 @@ app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/tasks', taskRouter); // 2. Thêm route cho tasks
-
+app.use('/api/transactions',transactionRouter);
 const PORT = process.env.PORT || 5000;
 
 connectDB()

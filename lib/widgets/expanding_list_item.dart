@@ -1,30 +1,34 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class ExpandingListItem extends StatefulWidget {
   final String name;
   final String sku;
   final int quantity;
-  final String uom;       // 🔥 thêm uom
-  final String wh;        // 🔥 tên kho
-  final String location;  // 🔥 vị trí chi tiết
+  final String uom;
+  final String wh;
+  final String location;
   final String exp;
   final String? imageUrl;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onRefresh; 
 
   const ExpandingListItem({
     Key? key,
     required this.name,
     required this.sku,
     required this.quantity,
-    required this.uom,       // required
-    required this.wh,        // required
-    required this.location,  // required
+    required this.uom,
+    required this.wh,
+    required this.location,
     required this.exp,
     this.imageUrl,
     this.onEdit,
     this.onDelete,
+    this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -36,6 +40,8 @@ class ExpandingListItemState extends State<ExpandingListItem>
   late AnimationController _controller;
   late Animation<double> _heightFactor;
   bool _isExpanded = false;
+
+  final String baseUrl = "http://10.0.2.2:5000/api/transactions"; // 🔥 base URL backend
 
   @override
   void initState() {
@@ -71,6 +77,123 @@ class ExpandingListItemState extends State<ExpandingListItem>
       }
     });
   }
+   Future<void> _handleTransaction(String type, int qty, [String note = ""]) async {
+  try {
+    final uri = Uri.parse("$baseUrl/addTransaction");
+    final body = {
+      "sku": widget.sku,
+      "wh": widget.wh,
+      "qty": qty,
+      "type": type,
+      "by": "admin", 
+      "note": note
+    };
+
+    final resp = await http.post(uri,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(body));
+
+    if (resp.statusCode == 201) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Thành công!"),
+        backgroundColor: Colors.green,
+      ));
+      widget.onRefresh?.call();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Lỗi: ${resp.body}"),
+        backgroundColor: Colors.red,
+      ));
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Lỗi kết nối: $e"),
+      backgroundColor: Colors.red,
+    ));
+  }
+}
+
+
+void _showExportDialog() {
+  final qtyCtrl = TextEditingController(text: "1");
+  final noteCtrl = TextEditingController();
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Xác nhận xuất kho"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: qtyCtrl,
+            decoration: const InputDecoration(labelText: "Số lượng cần xuất"),
+            keyboardType: TextInputType.number,
+          ),
+          TextField(
+            controller: noteCtrl,
+            decoration: const InputDecoration(labelText: "Ghi chú (tùy chọn)"),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy")),
+        ElevatedButton(
+          onPressed: () {
+            final qty = int.tryParse(qtyCtrl.text) ?? 0;
+            final note = noteCtrl.text.trim();
+            if (qty > 0) {
+              _handleTransaction("outbound", qty, note);
+            }
+          },
+          child: const Text("Xác nhận"),
+        )
+      ],
+    ),
+  );
+}
+
+void _showImportDialog() {
+  final qtyCtrl = TextEditingController(text: "1");
+  final noteCtrl = TextEditingController();
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Xác nhận nhập kho"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: qtyCtrl,
+            decoration: const InputDecoration(labelText: "Số lượng cần nhập"),
+            keyboardType: TextInputType.number,
+          ),
+          TextField(
+            controller: noteCtrl,
+            decoration: const InputDecoration(labelText: "Ghi chú (tùy chọn)"),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy")),
+        ElevatedButton(
+          onPressed: () {
+            final qty = int.tryParse(qtyCtrl.text) ?? 0;
+            final note = noteCtrl.text.trim();
+            if (qty > 0) {
+              _handleTransaction("inbound", qty, note);
+            }
+          },
+          child: const Text("Xác nhận"),
+        )
+      ],
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -119,18 +242,13 @@ class ExpandingListItemState extends State<ExpandingListItem>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.name,
-                    style: GoogleFonts.poppins(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(widget.name,
+                      style: GoogleFonts.poppins(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(
-                    "SKU: ${widget.sku}",
-                    style: GoogleFonts.poppins(
-                        fontSize: 14, color: Colors.grey[600]),
-                  ),
+                  Text("SKU: ${widget.sku}",
+                      style: GoogleFonts.poppins(
+                          fontSize: 14, color: Colors.grey[600])),
                 ],
               ),
             ),
@@ -149,39 +267,25 @@ class ExpandingListItemState extends State<ExpandingListItem>
         child: Column(
           children: [
             const Divider(),
-            _buildDetailRow("Số lượng:", "${widget.quantity} ${widget.uom}"), // 🔥 qty + uom
-            _buildDetailRow("Kho:", widget.wh),          // 🔥 kho tổng
-            _buildDetailRow("Vị trí:", widget.location), // 🔥 vị trí chi tiết
+            _buildDetailRow("Số lượng:", "${widget.quantity} ${widget.uom}"),
+            _buildDetailRow("Kho:", widget.wh),
+            _buildDetailRow("Vị trí:", widget.location),
             _buildDetailRow("Hạn sử dụng:", widget.exp),
             const SizedBox(height: 12),
             Row(
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: logic Xuất
-                  },
-                  child: const Text('Xuất'),
-                ),
+                ElevatedButton(onPressed: _showExportDialog, child: const Text("Xuất")),
                 const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () {
-                    // TODO: logic Nhập
-                  },
-                  child: const Text('Nhập'),
-                ),
+                ElevatedButton(onPressed: _showImportDialog, child: const Text("Nhập")),
                 const Spacer(),
                 if (widget.onEdit != null)
                   IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                    onPressed: widget.onEdit,
-                    tooltip: 'Chỉnh sửa',
-                  ),
+                      icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                      onPressed: widget.onEdit),
                 if (widget.onDelete != null)
                   IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.redAccent),
-                    onPressed: widget.onDelete,
-                    tooltip: 'Xóa',
-                  ),
+                      icon: const Icon(Icons.delete, color: Colors.redAccent),
+                      onPressed: widget.onDelete),
               ],
             )
           ],

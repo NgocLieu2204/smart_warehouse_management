@@ -206,6 +206,7 @@ class _InventoryViewState extends State<InventoryView> {
               imageUrl: item['imageUrl'],
               onEdit: () => _showInventoryDialog(item: item),
               onDelete: () => _deleteItem(item['sku']),
+              onRefresh: fetchInventoryData, //callback để refresh list
             );
           },
         ),
