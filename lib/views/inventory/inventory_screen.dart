@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../../widgets/expanding_list_item.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 class InventoryView extends StatefulWidget {
   const InventoryView({Key? key}) : super(key: key);
 
@@ -23,6 +23,12 @@ class _InventoryViewState extends State<InventoryView> {
   void initState() {
     super.initState();
     fetchInventoryData();
+  }
+
+  // Hàm lấy token Firebase hiện tại
+  Future<String?> getIdToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    return await user?.getIdToken();
   }
 
   Future<void> fetchInventoryData() async {
@@ -68,7 +74,7 @@ class _InventoryViewState extends State<InventoryView> {
         TextEditingController(text: item?['imageUrl'] ?? '');
 
     final isUpdate = item != null;
-
+    final token = await getIdToken();
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -128,10 +134,10 @@ class _InventoryViewState extends State<InventoryView> {
 
               final resp = isUpdate
                   ? await http.put(uri,
-                      headers: {"Content-Type": "application/json"},
+                      headers: {"Content-Type": "application/json", "Authorization": "Bearer $token", },
                       body: json.encode(body))
                   : await http.post(uri,
-                      headers: {"Content-Type": "application/json"},
+                      headers: {"Content-Type": "application/json","Authorization": "Bearer $token", },
                       body: json.encode(body));
 
               if (mounted) {
@@ -151,13 +157,19 @@ class _InventoryViewState extends State<InventoryView> {
       ),
     );
   }
-
   Future<void> _deleteItem(String sku) async {
-    final resp = await http.delete(Uri.parse('$baseUrl/deleteInventory/$sku'));
-    if (resp.statusCode == 200) {
-      fetchInventoryData();
-    }
+      final token = await getIdToken();
+      final resp = await http.delete(
+        Uri.parse('$baseUrl/deleteInventory/$sku'),
+        headers: {"Authorization": "Bearer $token"}, 
+      );
+      if (resp.statusCode == 200) {
+        fetchInventoryData();
+      }
   }
+
+
+
 
   void _expandAll() {
     for (var key in _keys) {

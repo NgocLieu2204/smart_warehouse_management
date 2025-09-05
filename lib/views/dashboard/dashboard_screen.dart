@@ -148,13 +148,16 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: const Row(
-            children: [
+          title: Row(
+            children: const [
               Icon(Icons.warning_amber_rounded, color: Colors.orange),
-              SizedBox(width: 10),
-              Text('Cảnh báo tồn kho'),
+              SizedBox(width: 5),
+              Text(
+                'Cảnh báo tồn kho',
+                style: TextStyle(fontSize: 20), 
+              ),
             ],
-          ),
+           ),
           content: SingleChildScrollView(
             child: ListBody(
               children: _lowStockProducts.map((product) {

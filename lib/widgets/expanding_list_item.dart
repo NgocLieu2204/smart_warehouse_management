@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:firebase_auth/firebase_auth.dart';
 class ExpandingListItem extends StatefulWidget {
   final String name;
   final String sku;
@@ -41,7 +41,7 @@ class ExpandingListItemState extends State<ExpandingListItem>
   late Animation<double> _heightFactor;
   bool _isExpanded = false;
 
-  final String baseUrl = "http://10.0.2.2:5000/api/transactions"; // 🔥 base URL backend
+  final String baseUrl = "http://10.0.2.2:5000/api/transactions"; 
 
   @override
   void initState() {
@@ -77,9 +77,18 @@ class ExpandingListItemState extends State<ExpandingListItem>
       }
     });
   }
-   Future<void> _handleTransaction(String type, int qty, [String note = ""]) async {
+
+  Future<String?> _getIdToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    return await user?.getIdToken();
+  }
+
+  
+
+  Future<void> _handleTransaction(String type, int qty, [String note = ""]) async {
   try {
     final uri = Uri.parse("$baseUrl/addTransaction");
+    final token = await _getIdToken();
     final body = {
       "sku": widget.sku,
       "wh": widget.wh,
@@ -90,7 +99,7 @@ class ExpandingListItemState extends State<ExpandingListItem>
     };
 
     final resp = await http.post(uri,
-        headers: {"Content-Type": "application/json"},
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer $token",},
         body: json.encode(body));
 
     if (resp.statusCode == 201) {
