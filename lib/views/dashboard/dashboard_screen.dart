@@ -142,53 +142,58 @@ class _DashboardViewState extends State<DashboardView> with WidgetsBindingObserv
 
   // --- Các phương thức UI ---
   void _showLowStockAlertDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Row(
-            children: const [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange),
-              SizedBox(width: 5),
-              Text(
-                'Cảnh báo tồn kho',
-                style: TextStyle(fontSize: 20), 
-              ),
-            ],
-           ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: _lowStockProducts.map((product) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Text(
-                    'Sản phẩm "${product['name']}" chỉ còn ${product['qty']} EA.',
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Xem chi tiết'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _navigateToLowStockScreen();
-              },
-            ),
-            TextButton(
-              child: const Text('Đã hiểu'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 5),
+            Text(
+              'Cảnh báo tồn kho',
+              style: TextStyle(fontSize: 20),
             ),
           ],
-        );
-      },
-    );
-  }
+        ),
+        content: SizedBox(
+          // 👇 Giới hạn chiều cao dialog, ví dụ tối đa 250px
+          height: 250,
+          width: double.maxFinite,
+          child: ListView.builder(
+            itemCount: _lowStockProducts.length,
+            itemBuilder: (context, index) {
+              final product = _lowStockProducts[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text(
+                  'Sản phẩm "${product['name']}" chỉ còn ${product['qty']} EA.',
+                ),
+              );
+            },
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Xem chi tiết'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToLowStockScreen();
+            },
+          ),
+          TextButton(
+            child: const Text('Đã hiểu'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   void _navigateToLowStockScreen() {
     Navigator.push(

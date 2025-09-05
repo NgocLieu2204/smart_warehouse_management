@@ -1,5 +1,3 @@
-// lib/views/auth/login_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -21,169 +19,194 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFE0E5EC),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          bool isLoading = state is AuthLoading;
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthError) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(state.message ?? 'Authentication Failed'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+          }
+        },
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            bool isLoading = state is AuthLoading;
 
-          return SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 30.0, vertical: 20.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.transparent,
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/warehouse_logo.png',
-                            fit: BoxFit.contain,
-                            width: 80,
-                            height: 80,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      const Text(
-                        'Smart Warehouse',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF333A44),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Made easy!',
-                        style:
-                            TextStyle(fontSize: 16, color: Colors.blueGrey),
-                      ),
-                      const SizedBox(height: 50),
-                      _buildNeumorphicTextField(
-                        controller: _emailController,
-                        hintText: 'username',
-                        icon: Icons.person_outline,
-                        validator: (val) =>
-                            val!.isEmpty ? 'Please enter an email' : null,
-                      ),
-                      const SizedBox(height: 25),
-                      _buildNeumorphicTextField(
-                        controller: _passwordController,
-                        hintText: 'password',
-                        icon: Icons.lock_outline,
-                        obscureText: true,
-                        validator: (val) => val!.length < 6
-                            ? 'Enter a password 6+ chars long'
-                            : null,
-                      ),
-                      const SizedBox(height: 20),
-                      if (state is AuthError)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0),
-                          child: Text(
-                            state.message ?? 'Đã có lỗi xảy ra',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      if (isLoading)
-                        const CircularProgressIndicator()
-                      else
-                        Column(
-                          children: [
-                            NeumorphicButton(
-                              onTap: () {
-                                if (_formKey.currentState!.validate()) {
-                                  context.read<AuthBloc>().add(
-                                        LoginRequested(
-                                          username:
-                                              _emailController.text.trim(),
-                                          password:
-                                              _passwordController.text.trim(),
-                                        ),
-                                      );
-                                }
+            return SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 30.0, vertical: 20.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.transparent,
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/warehouse_logo.png',
+                              fit: BoxFit.contain,
+                              width: 80,
+                              height: 80,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(Icons.warehouse, size: 60, color: Colors.blueGrey);
                               },
-                              backgroundColor: const Color(0xFF6D98E1),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        const Text(
+                          'Smart Warehouse',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF333A44),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Made easy!',
+                          style:
+                              TextStyle(fontSize: 16, color: Colors.blueGrey),
+                        ),
+                        const SizedBox(height: 50),
+                        _buildNeumorphicTextField(
+                          controller: _emailController,
+                          hintText: 'username',
+                          icon: Icons.person_outline,
+                          validator: (val) =>
+                              val!.isEmpty ? 'Please enter an email' : null,
+                        ),
+                        const SizedBox(height: 25),
+                        _buildNeumorphicTextField(
+                          controller: _passwordController,
+                          hintText: 'password',
+                          icon: Icons.lock_outline,
+                          obscureText: true,
+                          validator: (val) => val!.length < 6
+                              ? 'Enter a password 6+ chars long'
+                              : null,
+                        ),
+                        const SizedBox(height: 20),
+                        if (isLoading)
+                          const CircularProgressIndicator()
+                        else
+                          Column(
+                            children: [
+                              NeumorphicButton(
+                                onTap: () {
+                                  if (_formKey.currentState!.validate()) {
+                                    context.read<AuthBloc>().add(
+                                          LoginRequested(
+                                            username:
+                                                _emailController.text.trim(),
+                                            password:
+                                                _passwordController.text.trim(),
+                                          ),
+                                        );
+                                  }
+                                },
+                                backgroundColor: const Color(0xFF6D98E1),
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              NeumorphicButton(
+                                onTap: () {
+                                  context
+                                      .read<AuthBloc>()
+                                      .add(LoginWithGoogleRequested());
+                                },
+                                backgroundColor: Colors.white,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // FIX 1: Corrected asset name from 'google_logo.png' to 'google-logo.png'
+                                    Image.asset('assets/google-logo.png',
+                                        height: 24.0,
+                                        errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(Icons.error_outline, color: Colors.red);
+                                        },
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Sign in with Google',
+                                      // FIX 2: Reduced font size to prevent overflow
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        const SizedBox(height: 30),
+                        // FIX 3: Used Wrap for better responsiveness on small screens
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 4.0,
+                          children: [
+                            const Text(
+                              'Forgot password?',
+                              style: TextStyle(color: Colors.blueGrey),
+                            ),
+                            const Text(
+                              "OR",
+                              style: TextStyle(color: Colors.blueGrey),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const RegisterScreen()),
+                                );
+                              },
                               child: const Text(
-                                'Login',
+                                'Register',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.white,
+                                  color: Color(0xFF333A44),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            NeumorphicButton(
-                              onTap: () {
-                                context
-                                    .read<AuthBloc>()
-                                    .add(LoginWithGoogleRequested());
-                              },
-                              backgroundColor: Colors.white,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset('assets/google_logo.png',
-                                      height: 24.0),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Sign in with Google',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
                           ],
                         ),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Forgot password? ',
-                            style: TextStyle(color: Colors.blueGrey),
-                          ),
-                          const Text(
-                            "OR ",
-                            style: TextStyle(color: Colors.blueGrey),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const RegisterScreen()),
-                              );
-                            },
-                            child: const Text(
-                              'Register',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF333A44),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

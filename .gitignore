@@ -48,3 +48,5 @@ backend/smartwarehousemanager-1523c-firebase-adminsdk-fbsvc-a46a049d73.json
 
 ".env" 
 /ai_agent/.env
+
+node_modules/
