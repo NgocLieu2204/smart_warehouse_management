@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/task_model.dart';
-import '../../services/task_service.dart';
+import 'package:smart_warehouse_manager/models/task_model.dart';
+import 'package:smart_warehouse_manager/services/task_service.dart';
 import 'package:intl/intl.dart';
 import 'add_edit_task_screen.dart'; // Import màn hình Thêm/Sửa
 
@@ -11,8 +11,7 @@ class TasksView extends StatefulWidget {
   _TasksViewState createState() => _TasksViewState();
 }
 
-class _TasksViewState extends State<TasksView>
-    with SingleTickerProviderStateMixin {
+class _TasksViewState extends State<TasksView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TaskService _taskService = TaskService();
   final TextEditingController _searchController = TextEditingController();
@@ -60,7 +59,7 @@ class _TasksViewState extends State<TasksView>
   void _runFilter() {
     List<Task> results = [];
     final enteredKeyword = _searchController.text.toLowerCase();
-
+    
     // 1. Lọc theo từ khóa tìm kiếm
     if (enteredKeyword.isEmpty) {
       results = _allTasks;
@@ -69,23 +68,19 @@ class _TasksViewState extends State<TasksView>
         final typeMatch = task.type.toLowerCase().contains(enteredKeyword);
         final skuMatch = task.payload.sku.toLowerCase().contains(enteredKeyword);
         final whMatch = task.payload.wh.toLowerCase().contains(enteredKeyword);
-        final assigneeMatch =
-            task.assignee?.toLowerCase().contains(enteredKeyword) ?? false;
+        final assigneeMatch = task.assignee?.toLowerCase().contains(enteredKeyword) ?? false;
         return typeMatch || skuMatch || whMatch || assigneeMatch;
       }).toList();
     }
-
+    
     // 2. Lọc theo Tab
     final tabIndex = _tabController.index;
     List<Task> finalResults = [];
-    if (tabIndex == 1) {
-      // Open
+    if (tabIndex == 1) { // Open
       finalResults = results.where((task) => task.status == 'open').toList();
-    } else if (tabIndex == 2) {
-      // Done
+    } else if (tabIndex == 2) { // Done
       finalResults = results.where((task) => task.status == 'done').toList();
-    } else {
-      // All
+    } else { // All
       finalResults = results;
     }
 
@@ -111,7 +106,7 @@ class _TasksViewState extends State<TasksView>
         return Colors.grey;
     }
   }
-
+  
   // --- CÁC CHỨC NĂNG CHÍNH ---
 
   void _navigateToAddTask() async {
@@ -148,15 +143,9 @@ class _TasksViewState extends State<TasksView>
 
   @override
   Widget build(BuildContext context) {
-    // Xác định màu nền cho TextField dựa trên theme
-    final searchFieldColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.grey[800]
-        : Colors.grey.shade200;
-
     return Scaffold(
       appBar: AppBar(
-        title:
-            const Text('Tasks', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Tasks', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         bottom: TabBar(
@@ -181,22 +170,13 @@ class _TasksViewState extends State<TasksView>
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search by type, SKU, WH, assignee...',
-                  // Thay đổi 1: Sử dụng màu sắc từ theme cho chữ và icon
-                  hintStyle: TextStyle(
-                      color: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.color
-                          ?.withOpacity(0.6)),
-                  prefixIcon:
-                      Icon(Icons.search, color: Theme.of(context).iconTheme.color),
+                  prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  // Thay đổi 2: Sử dụng màu nền đã được xác định ở trên
-                  fillColor: searchFieldColor,
+                  fillColor: Colors.grey.shade200,
                 ),
               ),
               const SizedBox(height: 16),
@@ -221,24 +201,21 @@ class _TasksViewState extends State<TasksView>
 
   Widget _buildTaskList() {
     if (_filteredTasks.isEmpty) {
-      return Center(
-          child: Text(_searchController.text.isEmpty
-              ? 'Không có công việc nào trong mục này.'
-              : 'Không tìm thấy kết quả nào.'));
+      return Center(child: Text(_searchController.text.isEmpty 
+        ? 'Không có công việc nào trong mục này.'
+        : 'Không tìm thấy kết quả nào.'));
     }
     return ListView.builder(
       itemCount: _filteredTasks.length,
       itemBuilder: (context, index) {
         final task = _filteredTasks[index];
-        final title =
-            '${task.type.toUpperCase()}: ${task.payload.sku} - WH: ${task.payload.wh}';
+        final title = '${task.type.toUpperCase()}: ${task.payload.sku} - WH: ${task.payload.wh}';
 
         return GestureDetector(
           onTap: () => _navigateToEditTask(task),
           child: Card(
             margin: const EdgeInsets.only(bottom: 12.0),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             elevation: 2,
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -249,25 +226,20 @@ class _TasksViewState extends State<TasksView>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(title,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
                       IconButton(
-                        icon: Icon(Icons.delete_outline,
-                            color: Colors.red.shade300),
+                        icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
                         onPressed: () => _deleteTask(task.id),
                       )
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildInfoRow(
-                      Icons.person, 'Assignee: ${task.assignee ?? "Chưa gán"}'),
+                  _buildInfoRow(Icons.person, 'Assignee: ${task.assignee ?? "Chưa gán"}'),
                   const SizedBox(height: 8),
                   _buildInfoRow(Icons.priority_high, 'Priority: ${task.priority}'),
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.calendar_today,
-                      'Due date: ${task.dueAt != null ? DateFormat.yMd().format(task.dueAt!) : 'N/A'}'),
+                  _buildInfoRow(Icons.calendar_today, 'Due date: ${task.dueAt != null ? DateFormat.yMd().format(task.dueAt!) : 'N/A'}'),
                   const SizedBox(height: 12),
                   Row(
                     children: [

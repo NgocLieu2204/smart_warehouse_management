@@ -39,9 +39,6 @@ class _SettingsViewState extends State<SettingsView> {
                 SwitchListTile(
                   title: const Text('Chế độ tối'),
                   value: isDarkMode,
-                  activeColor: Colors.blue, // Màu khi công tắc BẬT
-                  inactiveThumbColor: Colors.grey, // Màu của núm tròn khi TẮT
-                  inactiveTrackColor: Colors.grey[300], // Màu của thanh trượt khi TẮT
                   onChanged: (bool value) {
                     context.read<ThemeBloc>().add(ThemeChanged(isDarkMode: value));
                   },
