@@ -12,18 +12,14 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IDE/Editor
 *.iml
 *.ipr
 *.iws
 .idea/
+.vscode/    # Uncomment nếu muốn ignore VS Code config
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# Flutter/Dart/Pub
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
@@ -31,22 +27,30 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
 
-# Symbolication related
-app.*.symbols
+# Generated plugin registrants
+linux/flutter/generated_*
+macos/Flutter/GeneratedPluginRegistrant.swift
+windows/flutter/generated_*
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# Android
+/android/app/build/
+android/.gradle/
 /android/app/debug
 /android/app/profile
 /android/app/release
 
-backend/smartwarehousemanager-1523c-firebase-adminsdk-fbsvc-a46a049d73.json
+# iOS
+ios/Pods/
+ios/Flutter/Flutter.podspec
+ios/Runner/GeneratedPluginRegistrant.*
 
-".env" 
-/ai_agent/.env
-
+# Node.js / backend
 node_modules/
+*.env
+backend/smartwarehousemanager-1523c-firebase-adminsdk-*.json
+
+# Obfuscation / symbolication
+app.*.symbols
+app.*.map.json
