@@ -9,7 +9,8 @@ const InventorySchema = new mongoose.Schema({
   wh: { type: String, required: true },    // mã warehouse
   location: { type: String  },    
   imageUrl: { type: String , required: false ,trim:true }, // URL hình ảnh sản phẩm
-  exp: { type: String }                      // hạn dùng
+  exp: { type: String } ,
+  unitPrice: {type: Number , required:true}
 }, { timestamps: true });
 
 module.exports = mongoose.model("inventory", InventorySchema);

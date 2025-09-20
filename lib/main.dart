@@ -4,16 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dio/dio.dart';
-
 import 'firebase_options.dart';
-import 'blocs/product/product_bloc.dart';
-import 'repositories/product_repository.dart';
 import 'repositories/auth_repository.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'blocs/auth/auth_event.dart';
 import 'blocs/auth/auth_state.dart';
-import 'blocs/product/product_event.dart';
 import 'views/auth/login_screen.dart';
 import 'views/main/main_screen.dart';
 import 'views/main/splash_screen.dart';
@@ -33,21 +28,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authRepository = AuthRepository();
-    final productRepo = ProductRepository(Dio());
 
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider.value(value: authRepository),
-        RepositoryProvider.value(value: productRepo),
+
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(authRepository)
           ),
-          BlocProvider<ProductBloc>(
-            create: (context) => ProductBloc(productRepo)..add(LoadProducts()),
-          ),
+         
           BlocProvider<ThemeBloc>(
             create: (context) => ThemeBloc(),
           ),

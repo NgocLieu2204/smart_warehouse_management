@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
 class ExpandingListItem extends StatefulWidget {
   final String name;
   final String sku;
@@ -12,6 +14,7 @@ class ExpandingListItem extends StatefulWidget {
   final String location;
   final String exp;
   final String? imageUrl;
+  final int? unitPrice;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRefresh; 
@@ -26,6 +29,7 @@ class ExpandingListItem extends StatefulWidget {
     required this.location,
     required this.exp,
     this.imageUrl,
+    this.unitPrice,
     this.onEdit,
     this.onDelete,
     this.onRefresh,
@@ -127,6 +131,8 @@ class ExpandingListItemState extends State<ExpandingListItem>
 void _showExportDialog() {
   final qtyCtrl = TextEditingController(text: "1");
   final noteCtrl = TextEditingController();
+  
+
   showDialog(
     context: context,
     builder: (_) => AlertDialog(
@@ -269,39 +275,47 @@ void _showImportDialog() {
   }
 
   Widget _buildExpandableContent() {
-    return SizeTransition(
-      sizeFactor: _heightFactor,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          children: [
-            const Divider(),
-            _buildDetailRow("Số lượng:", "${widget.quantity} ${widget.uom}"),
-            _buildDetailRow("Kho:", widget.wh),
-            _buildDetailRow("Vị trí:", widget.location),
-            _buildDetailRow("Hạn sử dụng:", widget.exp),
-            const SizedBox(height: 12),
-            Row(
+    final formatter = NumberFormat("#,###", "vi_VN");
+        return SizeTransition(
+          sizeFactor: _heightFactor,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
               children: [
-                ElevatedButton(onPressed: _showExportDialog, child: const Text("Xuất")),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _showImportDialog, child: const Text("Nhập")),
-                const Spacer(),
-                if (widget.onEdit != null)
-                  IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                      onPressed: widget.onEdit),
-                if (widget.onDelete != null)
-                  IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: widget.onDelete),
+                const Divider(),
+                _buildDetailRow("Số lượng:", "${widget.quantity} ${widget.uom}"),
+                _buildDetailRow("Kho:", widget.wh),
+                _buildDetailRow("Vị trí:", widget.location),
+                _buildDetailRow("Hạn sử dụng:", widget.exp),
+                if (widget.unitPrice != null)
+                  _buildDetailRow(
+                    "Đơn giá:",
+                    "${formatter.format(widget.unitPrice)} VNĐ"
+  ),
+
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    ElevatedButton(onPressed: _showExportDialog, child: const Text("Xuất")),
+                    const SizedBox(width: 8),
+                    ElevatedButton(onPressed: _showImportDialog, child: const Text("Nhập")),
+                    const Spacer(),
+                    if (widget.onEdit != null)
+                      IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                          onPressed: widget.onEdit),
+                    if (widget.onDelete != null)
+                      IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
+                          onPressed: widget.onDelete),
+                  ],
+                )
               ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
+            ),
+          ),
+        );
+      }
+
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(

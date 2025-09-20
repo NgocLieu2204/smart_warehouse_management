@@ -73,6 +73,8 @@ class _InventoryViewState extends State<InventoryView> {
     final imageUrlCtrl =
         TextEditingController(text: item?['imageUrl'] ?? '');
 
+    final unitPriceCtrl = TextEditingController(text: '${item?['unitPrice'] ?? ''}');
+
     final isUpdate = item != null;
     final token = await getIdToken();
     await showDialog(
@@ -108,6 +110,15 @@ class _InventoryViewState extends State<InventoryView> {
               TextField(
                   controller: imageUrlCtrl,
                   decoration: const InputDecoration(labelText: "URL Hình ảnh")),
+              TextField(
+                controller: unitPriceCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Đơn giá (VNĐ)",
+                  suffixText: "VNĐ",
+                ),
+                keyboardType: TextInputType.number,
+              ),
+
             ],
           ),
         ),
@@ -126,8 +137,8 @@ class _InventoryViewState extends State<InventoryView> {
                 "location": locCtrl.text,
                 "exp": expCtrl.text,
                 "imageUrl": imageUrlCtrl.text,
+                "unitPrice": int.tryParse(unitPriceCtrl.text) ?? 0, 
               };
-
               final uri = isUpdate
                   ? Uri.parse('$baseUrl/updateInventory/${item!['sku']}')
                   : Uri.parse('$baseUrl/createInventory');
@@ -207,19 +218,20 @@ class _InventoryViewState extends State<InventoryView> {
           itemBuilder: (context, index) {
             final item = _inventoryList[index];
             return ExpandingListItem(
-              key: _keys[index],
-              name: item['name'] ?? 'Không có tên',
-              sku: item['sku'] ?? 'N/A',
-              quantity: item['qty'] ?? 0,
-              uom: item['uom'] ?? "EA",   
-              wh: item['wh'] ?? 'N/A',    
-              location: item['location'] ?? 'N/A',
-              exp: item['exp'] ?? "N/A",  
-              imageUrl: item['imageUrl'],
-              onEdit: () => _showInventoryDialog(item: item),
-              onDelete: () => _deleteItem(item['sku']),
-              onRefresh: fetchInventoryData, //callback để refresh list
-            );
+                key: _keys[index],
+                name: item['name'] ?? 'Không có tên',
+                sku: item['sku'] ?? 'N/A',
+                quantity: item['qty'] ?? 0,
+                uom: item['uom'] ?? "EA",
+                wh: item['wh'] ?? 'N/A',
+                location: item['location'] ?? 'N/A',
+                exp: item['exp'] ?? "N/A",
+                imageUrl: item['imageUrl'],
+                unitPrice: item['unitPrice'] ?? 0,   // 👈 thêm
+                onEdit: () => _showInventoryDialog(item: item),
+                onDelete: () => _deleteItem(item['sku']),
+                onRefresh: fetchInventoryData,
+              );
           },
         ),
       );

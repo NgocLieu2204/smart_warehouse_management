@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/task_model.dart';
 import '../../services/task_service.dart';
+import '../../services/transaction_service.dart';
+import '../../models/transaction_model.dart';
 import 'package:intl/intl.dart';
 import 'add_edit_task_screen.dart'; // Import màn hình Thêm/Sửa
 
@@ -22,15 +24,34 @@ class _TasksViewState extends State<TasksView>
   bool _isLoading = true;
   String _error = '';
 
+  // Transaction
+  final TransactionService _transactionService = TransactionService();
+  List<TransactionModel> _transactions = [];
+  String _txError = '';
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadTasks();
+    _tabController = TabController(length: 4, vsync: this);
+
+    // add listener
     _tabController.addListener(_runFilter);
     _searchController.addListener(_runFilter);
+
+    _loadTasks();
+    _loadTransactions();
   }
 
+  /// 🔑 fix lỗi TabController index out of range khi hot reload
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_tabController.index >= _tabController.length) {
+      _tabController.index = 0;
+    }
+  }
+
+  // ---------------- TASKS ----------------
   Future<void> _loadTasks({bool showLoading = true}) async {
     if (showLoading) {
       setState(() {
@@ -61,7 +82,7 @@ class _TasksViewState extends State<TasksView>
     List<Task> results = [];
     final enteredKeyword = _searchController.text.toLowerCase();
 
-    // 1. Lọc theo từ khóa tìm kiếm
+    // 1. Lọc theo từ khóa
     if (enteredKeyword.isEmpty) {
       results = _allTasks;
     } else {
@@ -79,26 +100,16 @@ class _TasksViewState extends State<TasksView>
     final tabIndex = _tabController.index;
     List<Task> finalResults = [];
     if (tabIndex == 1) {
-      // Open
       finalResults = results.where((task) => task.status == 'open').toList();
     } else if (tabIndex == 2) {
-      // Done
       finalResults = results.where((task) => task.status == 'done').toList();
     } else {
-      // All
       finalResults = results;
     }
 
     setState(() {
       _filteredTasks = finalResults;
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
   }
 
   Color _getStatusColor(String status) {
@@ -111,8 +122,6 @@ class _TasksViewState extends State<TasksView>
         return Colors.grey;
     }
   }
-
-  // --- CÁC CHỨC NĂNG CHÍNH ---
 
   void _navigateToAddTask() async {
     final result = await Navigator.of(context).push<bool>(
@@ -138,7 +147,7 @@ class _TasksViewState extends State<TasksView>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã xóa công việc!')),
       );
-      _loadTasks(showLoading: false); // Tải lại danh sách không cần indicator
+      _loadTasks(showLoading: false);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi khi xóa: $e')),
@@ -146,9 +155,30 @@ class _TasksViewState extends State<TasksView>
     }
   }
 
+  // ---------------- TRANSACTIONS ----------------
+  Future<void> _loadTransactions() async {
+    try {
+      final txs = await _transactionService.getTransactions();
+      setState(() {
+        _transactions = txs;
+        _txError = '';
+      });
+    } catch (e) {
+      setState(() {
+        _txError = 'Lỗi tải transaction: $e';
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Xác định màu nền cho TextField dựa trên theme
     final searchFieldColor = Theme.of(context).brightness == Brightness.dark
         ? Colors.grey[800]
         : Colors.grey.shade200;
@@ -168,48 +198,60 @@ class _TasksViewState extends State<TasksView>
             Tab(text: 'All'),
             Tab(text: 'Open'),
             Tab(text: 'Done'),
+            Tab(text: 'History'),
           ],
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _loadTasks(),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search by type, SKU, WH, assignee...',
-                  // Thay đổi 1: Sử dụng màu sắc từ theme cho chữ và icon
-                  hintStyle: TextStyle(
-                      color: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.color
-                          ?.withOpacity(0.6)),
-                  prefixIcon:
-                      Icon(Icons.search, color: Theme.of(context).iconTheme.color),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  // Thay đổi 2: Sử dụng màu nền đã được xác định ở trên
-                  fillColor: searchFieldColor,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by type, SKU, WH, assignee...',
+                hintStyle: TextStyle(
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.color
+                      ?.withOpacity(0.6),
                 ),
+                prefixIcon: Icon(Icons.search,
+                    color: Theme.of(context).iconTheme.color),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: searchFieldColor,
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error.isNotEmpty
-                        ? Center(child: Text(_error))
-                        : _buildTaskList(),
-              ),
-            ],
+            ),
           ),
-        ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () {
+                if (_tabController.index == 3) {
+                  return _loadTransactions();
+                }
+                return _loadTasks();
+              },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error.isNotEmpty
+                          ? Center(child: Text(_error))
+                          : _buildTaskList(),
+                  _buildTaskList(), // Open
+                  _buildTaskList(), // Done
+                  _buildTransactionHistory(), // History
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddTask,
@@ -219,6 +261,7 @@ class _TasksViewState extends State<TasksView>
     );
   }
 
+  // ---------------- UI ----------------
   Widget _buildTaskList() {
     if (_filteredTasks.isEmpty) {
       return Center(
@@ -261,12 +304,14 @@ class _TasksViewState extends State<TasksView>
                     ],
                   ),
                   const SizedBox(height: 12),
+                  _buildInfoRow(Icons.person,
+                      'Assignee: ${task.assignee ?? "Chưa gán"}'),
+                  const SizedBox(height: 8),
                   _buildInfoRow(
-                      Icons.person, 'Assignee: ${task.assignee ?? "Chưa gán"}'),
+                      Icons.priority_high, 'Priority: ${task.priority}'),
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.priority_high, 'Priority: ${task.priority}'),
-                  const SizedBox(height: 8),
-                  _buildInfoRow(Icons.calendar_today,
+                  _buildInfoRow(
+                      Icons.calendar_today,
                       'Due date: ${task.dueAt != null ? DateFormat.yMd().format(task.dueAt!) : 'N/A'}'),
                   const SizedBox(height: 12),
                   Row(
@@ -297,6 +342,61 @@ class _TasksViewState extends State<TasksView>
       },
     );
   }
+
+ Widget _buildTransactionHistory() {
+  if (_txError.isNotEmpty) {
+    return Center(child: Text(_txError));
+  }
+  if (_transactions.isEmpty) {
+    return const Center(child: Text("Chưa có giao dịch nào."));
+  }
+
+  return ListView.separated(
+    itemCount: _transactions.length,
+    separatorBuilder: (_, __) => const Divider(height: 1),
+    itemBuilder: (context, index) {
+      final tx = _transactions[index];
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListTile(
+          leading: Icon(
+            tx.type == "inbound"
+                ? Icons.call_received
+                : tx.type == "outbound"
+                    ? Icons.call_made
+                    : Icons.settings,
+            color: tx.type == "inbound"
+                ? Colors.green
+                : tx.type == "outbound"
+                    ? Colors.red
+                    : Colors.blue,
+          ),
+          title: Text("${tx.type.toUpperCase()} - ${tx.sku}",
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Số lượng: ${tx.qty} | Kho: ${tx.wh}"),
+              Text("By: ${tx.by ?? 'N/A'}"),
+              if (tx.note != null && tx.note!.isNotEmpty)
+                Text("Note: ${tx.note}"),
+            ],
+          ),
+          trailing: Text(
+            DateFormat("dd/MM/yyyy\nHH:mm").format(tx.at),
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
 
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(

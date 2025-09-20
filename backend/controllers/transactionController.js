@@ -36,5 +36,14 @@ const TransactionController = {
             res.status(500).json({ message: "Error processing transaction", error });
         }
     },
+    async getTransaction(req,res) {
+        try {
+            const transactions = await Transaction.find().sort({ at: -1 }); // mới nhất trước
+            res.json(transactions);
+        } catch (err) {
+            res.status(500).json({ message: err.message });
+        }
+    } 
+    
 }
 module.exports = TransactionController;

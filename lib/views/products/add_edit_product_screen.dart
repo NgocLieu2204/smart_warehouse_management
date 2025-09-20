@@ -14,42 +14,55 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
-  final _barcodeController = TextEditingController();
+  final _uomController = TextEditingController();
   final _expController = TextEditingController();
+  final _warehouseController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _imageUrlController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     if (widget.product != null) {
       _nameController.text = widget.product!.name;
-      _barcodeController.text = widget.product!.barcode;
-      _expController.text = widget.product!.exp; // 🔥 exp là String
+      _uomController.text = widget.product!.uom;
+      _expController.text = widget.product!.exp;
+      _warehouseController.text = widget.product!.warehouse;
+      _locationController.text = widget.product!.location;
+      _priceController.text = widget.product!.unitPrice.toString();
+      _imageUrlController.text = widget.product!.imageUrl;
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _barcodeController.dispose();
+    _uomController.dispose();
     _expController.dispose();
+    _warehouseController.dispose();
+    _locationController.dispose();
+    _priceController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
   void _saveProduct() {
     if (_formKey.currentState!.validate()) {
       final product = Product(
-        id: widget.product?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id: widget.product?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
         description: widget.product?.description ?? '',
         quantity: widget.product?.quantity ?? 0,
-        unit: widget.product?.unit ?? '',
-        barcode: _barcodeController.text,
-        exp: _expController.text, // 🔥 nhập string
-        location: widget.product?.location ?? '',
-        imageUrl: widget.product?.imageUrl ?? '',
+        uom: _uomController.text,
+        warehouse: _warehouseController.text,
+        location: _locationController.text,
+        exp: _expController.text,
+        imageUrl: _imageUrlController.text,
+        unitPrice: int.tryParse(_priceController.text) ?? 0,
       );
 
-      // TODO: dispatch event Bloc hoặc gọi repository để lưu product
       Navigator.pop(context, product);
     }
   }
@@ -73,16 +86,33 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     value == null || value.isEmpty ? 'Please enter a name' : null,
               ),
               TextFormField(
-                controller: _barcodeController,
-                decoration: const InputDecoration(labelText: 'Barcode'),
+                controller: _uomController,
+                decoration: const InputDecoration(labelText: 'Unit (UOM)'),
                 validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a barcode' : null,
+                    value == null || value.isEmpty ? 'Please enter unit' : null,
               ),
               TextFormField(
                 controller: _expController,
                 decoration: const InputDecoration(labelText: 'Expiry (exp)'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Please enter expiry' : null,
+              ),
+              TextFormField(
+                controller: _warehouseController,
+                decoration: const InputDecoration(labelText: 'Warehouse'),
+              ),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(labelText: 'Location'),
+              ),
+              TextFormField(
+                controller: _priceController,
+                decoration: const InputDecoration(labelText: 'Unit Price'),
+                keyboardType: TextInputType.number,
+              ),
+              TextFormField(
+                controller: _imageUrlController,
+                decoration: const InputDecoration(labelText: 'Image URL'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(

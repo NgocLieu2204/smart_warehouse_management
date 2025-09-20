@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class ChatMessage {
   final String text;
@@ -25,6 +26,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+
 
   // Hàm gửi API
   Future<void> _sendMessageToAPI(String text) async {
@@ -120,6 +124,35 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _sendMessageToAPI(text);
   }
+  @override
+    void initState() {
+      super.initState();
+      _speech = stt.SpeechToText();
+    }
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => print("STATUS: $val"),
+        onError: (val) => print("ERROR: $val"),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) {
+            setState(() {
+              _textController.text = val.recognizedWords;
+            });
+          },
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(height: 24),
           _buildSuggestionChip("Tìm kiếm sản phẩm..."),
-          _buildSuggestionChip("Giao dịch gần nhất do student01 thực hiện?"),
+          _buildSuggestionChip("Tồn kho sản phẩm có SKU là DT001 ?"),
         ],
       ),
     );
@@ -188,34 +221,42 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildTextComposer(Color themeColor) {
-    return Container(
-      margin: const EdgeInsets.all(12.0),
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(24.0),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              onSubmitted: _handleSubmitted,
-              decoration: const InputDecoration.collapsed(
-                hintText: "Hỏi AI Agent...",
+ Widget _buildTextComposer(Color themeColor) {
+      return Container(
+        margin: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(24.0),
+        ),
+        child: Row(
+          children: <Widget>[
+            IconButton(
+              icon: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                color: _isListening ? Colors.red : Colors.black54,
               ),
-              textCapitalization: TextCapitalization.sentences,
+              onPressed: _listen,
             ),
-          ),
-          IconButton(
-            icon: Icon(Icons.send, color: themeColor),
-            onPressed: () => _handleSubmitted(_textController.text),
-          ),
-        ],
-      ),
-    );
-  }
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                onSubmitted: _handleSubmitted,
+                decoration: const InputDecoration.collapsed(
+                  hintText: "Hỏi AI Agent...",
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.send, color: themeColor),
+              onPressed: () => _handleSubmitted(_textController.text),
+            ),
+          ],
+        ),
+      );
+    }
+
 
   Widget _buildMessageBubble(ChatMessage message, Color themeColor) {
     final align =

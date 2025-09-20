@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.smart_warehouse_manager"
-        minSdk =  23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
